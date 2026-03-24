@@ -23,12 +23,14 @@ let currentTool = 'NONE'
 let currentToolCategory = 'NONE'
 let selectedElements = []
 let movement = new Map()
+let currentColor = '#FF8DA1'
+let currentWidth = '5'
 
 //events
 allInputs.forEach((input) => {
   input.addEventListener("change", (e) => {
     currentTool = e.target.id
-    if (e.target.id === 'brush-tool') {
+    if (e.target.id === 'brush-tool' || e.target.id === 'dash-brush-tool' || e.target.id === 'dotted-brush-tool') {
       currentToolCategory = 'FREEHAND'      
     }
     else if (e.target.id === 'selection-tool') {
@@ -49,9 +51,20 @@ canvas.addEventListener("mousedown", (e) => {
   if (currentTool === 'selection-tool') {
     selectedElements = getSelectedElements(e)
     selectedElements.forEach((el) => {
-      let offsetX = e.clientX - el.x1
-      let offsetY = e.clientY - el.y1
-      movement.set(el, {offsetX, offsetY})
+      if (el.toolCategory === 'SHAPE') {
+        let offsetX = e.clientX - el.x1
+        let offsetY = e.clientY - el.y1
+        movement.set(el, {offsetX, offsetY})        
+      }
+      else if (el.toolCategory === 'FREEHAND') {
+        let offsets = []
+        el.points.forEach((p) => {
+          let offsetX = p.x - e.clientX
+          let offsetY = p.y - e.clientY
+          offsets.push({x: offsetX, y: offsetY})
+        })
+        movement.set(el, offsets)
+      }
     })
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     render()
@@ -63,6 +76,8 @@ canvas.addEventListener("mousedown", (e) => {
       y1: e.clientY,
       x2: e.clientX,
       y2: e.clientY,
+      width: currentWidth,
+      color: currentColor,
       tool: currentTool,
       toolCategory: currentToolCategory
     })
@@ -71,7 +86,9 @@ canvas.addEventListener("mousedown", (e) => {
     elements.push({
       x1: e.clientX,
       y1: e.clientY,
-      points: [{x: e.clientX, y: e.clientY}],
+      points: [{ x: e.clientX, y: e.clientY }],
+      width: currentWidth,
+      color: currentColor,
       tool: currentTool,
       toolCategory: currentToolCategory
     })
@@ -83,15 +100,24 @@ canvas.addEventListener("mousemove", (e) => {
 
   if (currentTool === 'selection-tool') {
     selectedElements.forEach((el) => {
-      let { offsetX, offsetY } = movement.get(el)
-      
-      let dx = e.clientX - el.x1 - offsetX
-      let dy = e.clientY - el.y1 - offsetY
+      if (el.toolCategory === 'SHAPE') {
+        let { offsetX, offsetY } = movement.get(el)
+        
+        let dx = e.clientX - el.x1 - offsetX
+        let dy = e.clientY - el.y1 - offsetY
 
-      el.x1 += dx
-      el.x2 += dx
-      el.y1 += dy
-      el.y2 += dy
+        el.x1 += dx
+        el.x2 += dx
+        el.y1 += dy
+        el.y2 += dy
+      }
+      else if (el.toolCategory === 'FREEHAND') {
+        let offsets = movement.get(el)
+        for (let i = 0; i < el.points.length; i++) {
+          el.points[i].x = e.clientX + offsets[i].x
+          el.points[i].y = e.clientY + offsets[i].y
+        }
+      }
     })
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       render()
@@ -122,14 +148,15 @@ canvas.addEventListener("mouseup", (e) => {
 //render function
 const render = () => {
   // coords are (x1, y1), (x1, y2) (x2, y1) (x2, y2)
-  selectedElements.forEach((el) => {
-    let { x1, y1, width, height } = getBounds(el)
-    renderSelectionOutline( x1 - 5 , y1 - 5 , width + 10, height + 10 )
-  })
 
   elements.forEach((element) => {
+    ctx.save()
+    ctx.lineWidth = element.width
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
+    ctx.strokeStyle = element.color || "#000"
     if (element.toolCategory === 'SHAPE') {
-      
+
       let { x1, y1, x2, y2, tool } = element
 
       if (tool === 'rect-tool') {
@@ -157,17 +184,45 @@ const render = () => {
       }
     }
     else if (element.toolCategory === 'FREEHAND') {
-      ctx.beginPath()
-      let {x, y} = element.points[0]
-      ctx.moveTo(x, y)
-      for (let i = 1; i < element.points.length; i++) {
-        let {x, y} = element.points[i]
-        ctx.lineTo(x, y)
+      if (element.tool === 'brush-tool') {
+        ctx.beginPath()
+        let { x, y } = element.points[0]
+        ctx.moveTo(x, y)
+        for (let i = 1; i < element.points.length; i++) {
+          let { x, y } = element.points[i]
+          ctx.lineTo(x, y)
+        }
+        ctx.stroke()
       }
-      ctx.stroke()
-      console.log(element.points)
+      if (element.tool === 'dash-brush-tool') {
+        ctx.setLineDash([10, 15]);
+        ctx.beginPath()
+        let { x, y } = element.points[0]
+        ctx.moveTo(x, y)
+        for (let i = 1; i < element.points.length; i++) {
+          let { x, y } = element.points[i]
+          ctx.lineTo(x, y)
+        }
+        ctx.stroke()        
+      }
+      if (element.tool === 'dotted-brush-tool') {
+        ctx.setLineDash([0.5, 10]);
+        ctx.beginPath()
+        let { x, y } = element.points[0]
+        ctx.moveTo(x, y)
+        for (let i = 1; i < element.points.length; i++) {
+          let { x, y } = element.points[i]
+          ctx.lineTo(x, y)
+        }
+        ctx.stroke()                
+      }
     }
+    ctx.restore()
   })  
+  selectedElements.forEach((el) => {
+    let { x1, y1, width, height } = getBounds(el)
+    renderSelectionOutline( x1 - 5 , y1 - 5 , width + 10, height + 10 )
+  })
 }
 
 //get selection function
@@ -185,11 +240,11 @@ const getSelectedElements = ({ clientX, clientY }) => {
         }
       }
       if (el.tool === 'line-tool') {
-        let dist1 = dist(x1, y1, clientX, clientY)
-        let dist2 = dist(clientX, clientY, x2, y2)
+        let d1 = dist(x1, y1, clientX, clientY)
+        let d2 = dist(clientX, clientY, x2, y2)
         let len = dist(x1, y1, x2, y2)
 
-        if ((dist1 + dist2 - len) < 1) {
+        if ((d1 + d2 - len) < 1) {
           selected.push(el)
         }
       }
@@ -218,8 +273,22 @@ const getSelectedElements = ({ clientX, clientY }) => {
         } 
       }
     }
-  })
+    if (el.toolCategory === 'FREEHAND') {
+      for (let i = 0; i < el.points.length - 1; i++) {
+        let p1 = el.points[i]
+        let p2 = el.points[i + 1]
 
+        let len = dist(p1.x, p1.y, p2.x, p2.y)
+        let d1 = dist(p1.x, p1.y, clientX, clientY)
+        let d2 = dist(clientX, clientY, p2.x, p2.y)
+
+        if (Math.abs(d1 + d2 - len) < 5) {
+          selected.push(el)
+          break
+        }
+      }
+    }
+  })
   return selected
 }
 
@@ -248,6 +317,26 @@ const getBounds = (element) => {
       y1: element.y1 - r,
       width: 2 * r,
       height: 2 * r
+    }
+  }
+  if (element.tool === 'brush-tool') {
+    let minX = element.points[0].x
+    let maxX = element.points[0].x
+    let minY = element.points[0].y
+    let maxY = element.points[0].y
+
+    for (let i = 1; i < element.points.length; i++) {
+      minX = Math.min(minX, element.points[i].x)
+      minY = Math.min(minY, element.points[i].y)
+      maxX = Math.max(maxX, element.points[i].x)
+      maxY = Math.max(maxY, element.points[i].y)      
+    }
+
+    return {
+      x1: minX,
+      y1: minY,
+      width: maxX - minX,
+      height: maxY - minY
     }
   }
 }
