@@ -116,6 +116,7 @@ canvas.addEventListener("mousemove", (e) => {
 
 canvas.addEventListener("mouseup", (e) => {
   currentCanvasState = 'IDLE'
+  movement.clear()
 })
 
 //render function
@@ -129,8 +130,7 @@ const render = () => {
   elements.forEach((element) => {
     if (element.toolCategory === 'SHAPE') {
       
-      let { x1, y1, x2, y2 } = getDiagonalCorners(element)
-      let { tool } = element
+      let { x1, y1, x2, y2, tool } = element
 
       if (tool === 'rect-tool') {
         ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
@@ -206,14 +206,14 @@ const getSelectedElements = ({ clientX, clientY }) => {
         let y3 = y2
 
         // area of triangle ABC 
-        let A = area (x1, y1, x2, y2, x3, y3); 
+        let A = area (x1, y1, x2, y1, x3, y3); 
         // area of triangle PBC 
-        let A1 = area (clientX, clientY, x2, y2, x3, y3); 
+        let A1 = area (clientX, clientY, x2, y1, x3, y3); 
         // area of triangle PAC 
         let A2 = area (x1, y1, clientX, clientY, x3, y3); 
         // area of triangle PAB    
-        let A3 = area (x1, y1, x2, y2, clientX, clientY); 
-        if (A === A1 + A2 + A3) {
+        let A3 = area (x1, y1, x2, y1, clientX, clientY); 
+        if (Math.abs(A - (A1 + A2 + A3)) < 0.1) {
           selected.push(el)
         } 
       }
