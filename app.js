@@ -50,6 +50,8 @@ canvas.addEventListener("mouseup", (e) => {
   currentState = 'idle'
 })
 
+// coords are (x1, y1), (x1, y2) (x2, y1) (x2, y2)
+
 const render = () => {
   elements.forEach((element) => {
     let { x1, y1, x2, y2, tool } = element
@@ -78,6 +80,14 @@ const render = () => {
       // ctx.beginPath()
       // ctx.arc(x, y, rad, 0, 2 * Math.PI, true)
       // ctx.stroke()
+    }
+    if (currentSelection === 'triangle-tool') {
+      ctx.beginPath()
+      ctx.moveTo(x1, y1)
+      ctx.lineTo(x2, y1)
+      ctx.lineTo((x1 + x2) / 2, y2)
+      ctx.closePath()
+      ctx.stroke()
     }
   })
 }
