@@ -22,6 +22,7 @@ let currentCanvasState = 'IDLE'
 let currentTool = 'NONE'
 let currentToolCategory = 'NONE'
 let selectedElements = []
+let movement = new Map()
 
 //events
 allInputs.forEach((input) => {
@@ -47,6 +48,11 @@ canvas.addEventListener("mousedown", (e) => {
 
   if (currentTool === 'selection-tool') {
     selectedElements = getSelectedElements(e)
+    selectedElements.forEach((el) => {
+      let offsetX = e.clientX - el.x1
+      let offsetY = e.clientY - el.y1
+      movement.set(el, {offsetX, offsetY})
+    })
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     render()
     return
@@ -70,14 +76,29 @@ canvas.addEventListener("mousedown", (e) => {
       toolCategory: currentToolCategory
     })
   } 
-
 })
 
 canvas.addEventListener("mousemove", (e) => {
   if (currentCanvasState !== 'EDITING') return
 
-  let el = elements[elements.length - 1]
+  if (currentTool === 'selection-tool') {
+    selectedElements.forEach((el) => {
+      let { offsetX, offsetY } = movement.get(el)
+      
+      let dx = e.clientX - el.x1 - offsetX
+      let dy = e.clientY - el.y1 - offsetY
 
+      el.x1 += dx
+      el.x2 += dx
+      el.y1 += dy
+      el.y2 += dy
+    })
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      render()
+    return
+  }
+
+  let el = elements[elements.length - 1]
   if (currentToolCategory === 'SHAPE') {
     el.x2 = e.clientX
     el.y2 = e.clientY  
@@ -108,7 +129,8 @@ const render = () => {
   elements.forEach((element) => {
     if (element.toolCategory === 'SHAPE') {
       
-      let { x1, y1, x2, y2, tool } = element
+      let { x1, y1, x2, y2 } = getDiagonalCorners(element)
+      let { tool } = element
 
       if (tool === 'rect-tool') {
         ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
