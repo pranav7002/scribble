@@ -111,14 +111,6 @@ const render = () => {
         ctx.beginPath()
         ctx.arc(x1, y1, rad, 0, 2 * Math.PI, true)
         ctx.stroke()
-
-        //try fixing this later
-        // let x = Math.abs(x2 - x1) < Math.abs(y2 - y1) ? (x1 + x2)/2 : (x1 + (Math.abs(y2 - y1)))/2
-        // let y = Math.abs(x2 - x1) < Math.abs(y2 - y1) ? (y1 + (Math.abs(x2 - x1)))/2 : (y1 + y2)/2
-        // let rad = Math.abs(x2 - x1) < Math.abs(y2 - y1) ? Math.abs(x2 - x1) / 2 : Math.abs(y2 - y1) / 2
-        // ctx.beginPath()
-        // ctx.arc(x, y, rad, 0, 2 * Math.PI, true)
-        // ctx.stroke()
       }
       if (tool === 'triangle-tool') {
         ctx.beginPath()
@@ -163,6 +155,30 @@ const getSelectedElements = ({ clientX, clientY }) => {
           selectedElements.push(el)
         }
       }
+      if (el.tool === 'circle-tool') {
+        let rad = dist(x1, y1, x2, y2)
+        let distFromCenter = dist(x1, y1, clientX, clientY)
+
+        if (distFromCenter < rad) {
+          selectedElements.push(el)
+        }
+      }
+      if (el.tool === 'triangle-tool') {
+        let x3 = (x1 + x2) / 2
+        let y3 = y2
+
+        // area of triangle ABC 
+        let A = area (x1, y1, x2, y2, x3, y3); 
+        // area of triangle PBC 
+        let A1 = area (x, y, x2, y2, x3, y3); 
+        // area of triangle PAC 
+        let A2 = area (x1, y1, x, y, x3, y3); 
+        // area of triangle PAB    
+        let A3 = area (x1, y1, x2, y2, clientX, clientY); 
+        if (A === A1 + A2 + A3) {
+          selectedElements.push(el)
+        } 
+      }
     }
   })
 }
@@ -185,4 +201,9 @@ const dist = (x1, y1, x2, y2) => {
   let dx = x2 - x1
   let dy = y2 - y1
   return Math.sqrt(dx * dx + dy * dy)
+}
+
+const area = (x1, y1, x2, y2, x3, y3) => {
+  //Heron's formula
+  return Math.abs((x1*(y2-y3) + x2*(y3-y1)+ x3*(y1-y2))/2.0); 
 }
