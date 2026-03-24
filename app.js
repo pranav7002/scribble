@@ -40,7 +40,12 @@ canvas.addEventListener("mousedown", (e) => {
 
   currentCanvasState = "EDITING"
 
-  if (currentToolCategory === 'SHAPE') {
+  if (currentTool === 'selection-tool') {
+    selectedElements = getSelectedElements(e)
+    render()
+    return
+  }
+  else if (currentToolCategory === 'SHAPE') {
   elements.push({
       x1: e.clientX,
       y1: e.clientY,
@@ -59,9 +64,6 @@ canvas.addEventListener("mousedown", (e) => {
       toolCategory: currentToolCategory
     })
   } 
-  else if (currentTool === 'selection-tool') {
-    selectedElements = getSelectedElement()
-  }
 
 })
 
@@ -92,6 +94,12 @@ canvas.addEventListener("mouseup", (e) => {
 // coords are (x1, y1), (x1, y2) (x2, y1) (x2, y2)
 
 const render = () => {
+
+  selectedElements.forEach((el) => {
+    let { x1, y1, width, height } = getBounds(el)
+    renderSelectionOutline( x1 - 5 , y1 - 5 , width + 10, height + 10 )
+  })
+
   elements.forEach((element) => {
     if (element.toolCategory === 'SHAPE') {
       
@@ -136,6 +144,8 @@ const render = () => {
 }
 
 const getSelectedElements = ({ clientX, clientY }) => {
+  let selected = []
+
   elements.forEach((el) => {
     if (el.toolCategory === 'SHAPE') {
 
@@ -143,7 +153,7 @@ const getSelectedElements = ({ clientX, clientY }) => {
 
       if (el.tool === 'rect-tool') {
         if ((clientX >= x1 && clientX <= x2) && (clientY >= y1 && clientY <= y2)) {
-          selectedElements.push(el)
+          selected.push(el)
         }
       }
       if (el.tool === 'line-tool') {
@@ -152,7 +162,7 @@ const getSelectedElements = ({ clientX, clientY }) => {
         let len = dist(x1, y1, x2, y2)
 
         if ((dist1 + dist2 - len) < 1) {
-          selectedElements.push(el)
+          selected.push(el)
         }
       }
       if (el.tool === 'circle-tool') {
@@ -160,7 +170,7 @@ const getSelectedElements = ({ clientX, clientY }) => {
         let distFromCenter = dist(x1, y1, clientX, clientY)
 
         if (distFromCenter < rad) {
-          selectedElements.push(el)
+          selected.push(el)
         }
       }
       if (el.tool === 'triangle-tool') {
@@ -170,17 +180,47 @@ const getSelectedElements = ({ clientX, clientY }) => {
         // area of triangle ABC 
         let A = area (x1, y1, x2, y2, x3, y3); 
         // area of triangle PBC 
-        let A1 = area (x, y, x2, y2, x3, y3); 
+        let A1 = area (clientX, clientY, x2, y2, x3, y3); 
         // area of triangle PAC 
-        let A2 = area (x1, y1, x, y, x3, y3); 
+        let A2 = area (x1, y1, clientX, clientY, x3, y3); 
         // area of triangle PAB    
         let A3 = area (x1, y1, x2, y2, clientX, clientY); 
         if (A === A1 + A2 + A3) {
-          selectedElements.push(el)
+          selected.push(el)
         } 
       }
     }
   })
+
+  return selected
+}
+
+const getBounds = (element) => {
+  let { x1, y1, x2, y2 } = getDiagonalCorners(element)
+
+  if (
+    element.tool === 'rect-tool' ||
+    element.tool === 'line-tool' ||
+    element.tool === 'triangle-tool'
+  ) {
+    return {
+      x1,
+      y1,
+      width: x2 - x1,
+      height: y2 - y1
+    }
+  }
+
+  if (element.tool === 'circle-tool') {
+    let r = dist(element.x1, element.y1, element.x2, element.y2)
+
+    return {
+      x1: element.x1 - r,
+      y1: element.y1 - r,
+      width: 2 * r,
+      height: 2 * r
+    }
+  }
 }
 
 const getDiagonalCorners = ({ x1, y1, x2, y2 }) => {
@@ -206,4 +246,10 @@ const dist = (x1, y1, x2, y2) => {
 const area = (x1, y1, x2, y2, x3, y3) => {
   //Heron's formula
   return Math.abs((x1*(y2-y3) + x2*(y3-y1)+ x3*(y1-y2))/2.0); 
+}
+
+const renderSelectionOutline = (x1, y1, width, height) => {
+  ctx.strokeStyle = '#0000FF'
+  ctx.strokeRect(x1, y1, width, height)
+  ctx.strokeStyle = '#000000'
 }
