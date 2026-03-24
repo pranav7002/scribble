@@ -1,3 +1,9 @@
+//TOOL CATEGORIES:
+// 1. SHAPE
+// line, rectangle, circle, triangle
+// 2. FREEHAND
+// brush
+
 const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext("2d")
 const allInputs = document.querySelectorAll("input")
@@ -14,6 +20,7 @@ let elements = []
 let currentCanvasState = 'IDLE'
 let currentTool = 'NONE'
 let currentToolCategory = 'NONE'
+let selectedElements = []
 
 allInputs.forEach((input) => {
   input.addEventListener("change", (e) => {
@@ -31,7 +38,7 @@ allInputs.forEach((input) => {
 canvas.addEventListener("mousedown", (e) => {
   if (currentTool === 'NONE') return
 
-  currentCanvasState = "DRAWING"
+  currentCanvasState = "EDITING"
 
   if (currentToolCategory === 'SHAPE') {
   elements.push({
@@ -52,11 +59,14 @@ canvas.addEventListener("mousedown", (e) => {
       toolCategory: currentToolCategory
     })
   } 
+  else if (currentTool === 'selection-tool') {
+    selectedElements = getSelectedElement()
+  }
 
 })
 
 canvas.addEventListener("mousemove", (e) => {
-  if (currentCanvasState === 'IDLE') return
+  if (currentCanvasState !== 'EDITING') return
 
   let el = elements[elements.length - 1]
 
@@ -84,6 +94,7 @@ canvas.addEventListener("mouseup", (e) => {
 const render = () => {
   elements.forEach((element) => {
     if (element.toolCategory === 'SHAPE') {
+      
       let { x1, y1, x2, y2, tool } = element
 
       if (tool === 'rect-tool') {
@@ -96,9 +107,7 @@ const render = () => {
         ctx.stroke()
       }
       if (tool === 'circle-tool') {
-        let dx = x2 - x1
-        let dy = y2 - y1
-        let rad = Math.sqrt(dx * dx + dy * dy)
+        let rad = dist(x1, y1, x2, y2)
         ctx.beginPath()
         ctx.arc(x1, y1, rad, 0, 2 * Math.PI, true)
         ctx.stroke()
@@ -132,4 +141,48 @@ const render = () => {
       console.log(element.points)
     }
   })  
+}
+
+const getSelectedElements = ({ clientX, clientY }) => {
+  elements.forEach((el) => {
+    if (el.toolCategory === 'SHAPE') {
+
+      let { x1, y1, x2, y2 } = getDiagonalCorners(el)
+
+      if (el.tool === 'rect-tool') {
+        if ((clientX >= x1 && clientX <= x2) && (clientY >= y1 && clientY <= y2)) {
+          selectedElements.push(el)
+        }
+      }
+      if (el.tool === 'line-tool') {
+        let dist1 = dist(x1, y1, clientX, clientY)
+        let dist2 = dist(clientX, clientY, x2, y2)
+        let len = dist(x1, y1, x2, y2)
+
+        if ((dist1 + dist2 - len) < 1) {
+          selectedElements.push(el)
+        }
+      }
+    }
+  })
+}
+
+const getDiagonalCorners = ({ x1, y1, x2, y2 }) => {
+  const minX = Math.min(x1, x2)
+  const maxX = Math.max(x1, x2)
+  const minY = Math.min(y1, y2)
+  const maxY = Math.max(y1, y2)
+
+  return {
+    x1: minX,
+    y1: minY,
+    x2: maxX,
+    y2: maxY
+  }
+}
+
+const dist = (x1, y1, x2, y2) => {
+  let dx = x2 - x1
+  let dy = y2 - y1
+  return Math.sqrt(dx * dx + dy * dy)
 }
