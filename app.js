@@ -4,6 +4,7 @@
 // 2. FREEHAND
 // brush
 
+//declerations
 const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext("2d")
 const allInputs = document.querySelectorAll("input")
@@ -22,14 +23,18 @@ let currentTool = 'NONE'
 let currentToolCategory = 'NONE'
 let selectedElements = []
 
+//events
 allInputs.forEach((input) => {
   input.addEventListener("change", (e) => {
     currentTool = e.target.id
     if (e.target.id === 'brush-tool') {
       currentToolCategory = 'FREEHAND'      
     }
+    else if (e.target.id === 'selection-tool') {
+      currentToolCategory = 'SELECTION'
+    }
     else {
-      currentToolCategory = 'SHAPE'
+      currentToolCategory = 'SHAPE'      
     }
     console.log(currentTool)
   })
@@ -42,6 +47,7 @@ canvas.addEventListener("mousedown", (e) => {
 
   if (currentTool === 'selection-tool') {
     selectedElements = getSelectedElements(e)
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
     render()
     return
   }
@@ -91,10 +97,9 @@ canvas.addEventListener("mouseup", (e) => {
   currentCanvasState = 'IDLE'
 })
 
-// coords are (x1, y1), (x1, y2) (x2, y1) (x2, y2)
-
+//render function
 const render = () => {
-
+  // coords are (x1, y1), (x1, y2) (x2, y1) (x2, y2)
   selectedElements.forEach((el) => {
     let { x1, y1, width, height } = getBounds(el)
     renderSelectionOutline( x1 - 5 , y1 - 5 , width + 10, height + 10 )
@@ -143,6 +148,7 @@ const render = () => {
   })  
 }
 
+//get selection function
 const getSelectedElements = ({ clientX, clientY }) => {
   let selected = []
 
@@ -195,6 +201,7 @@ const getSelectedElements = ({ clientX, clientY }) => {
   return selected
 }
 
+//get bounds function
 const getBounds = (element) => {
   let { x1, y1, x2, y2 } = getDiagonalCorners(element)
 
@@ -237,6 +244,7 @@ const getDiagonalCorners = ({ x1, y1, x2, y2 }) => {
   }
 }
 
+//utils
 const dist = (x1, y1, x2, y2) => {
   let dx = x2 - x1
   let dy = y2 - y1
