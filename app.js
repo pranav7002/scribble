@@ -8,8 +8,8 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const allToolInputs = document.querySelectorAll("input[type='radio']");
-const allColors = document.querySelectorAll(".color")
-const allOpacity = document.querySelectorAll(".opacity-btn")
+const allColors = document.querySelectorAll(".color");
+const allOpacity = document.querySelectorAll(".opacity-btn");
 const strokeSlider = document.getElementById("stroke");
 
 canvas.width = window.innerWidth;
@@ -22,22 +22,22 @@ let currentToolCategory = "NONE";
 let selectedElements = [];
 let resizingKey = "REVERT";
 let movement = new Map();
-let currentColor = "#000000"   // default: black
-let currentWidth = 3           // default stroke width
-let currentOpacity = 1         // default: fully opaque
+let currentColor = "#000000"; // default black
+let currentWidth = 3; // default stroke width
+let currentOpacity = 1; // default opaque
 
 //events
 allColors.forEach((color) => {
     color.addEventListener("click", (e) => {
-        currentColor = e.target.style.backgroundColor
-    })
-})
+        currentColor = getComputedStyle(e.target).backgroundColor;
+    });
+});
 
 allOpacity.forEach((opacity) => {
     opacity.addEventListener("click", (e) => {
-        currentOpacity = Number(e.target.dataset.opacity)
-    })
-})
+        currentOpacity = Number(e.target.dataset.opacity);
+    });
+});
 
 strokeSlider.addEventListener("input", (e) => {
     currentWidth = Number(e.target.value);
@@ -371,7 +371,8 @@ const getBounds = (element) => {
             height: 2 * r,
         };
     }
-    if (element.tool === "brush-tool" ||
+    if (
+        element.tool === "brush-tool" ||
         element.tool === "dotted-brush-tool" ||
         element.tool === "dash-brush-tool"
     ) {
