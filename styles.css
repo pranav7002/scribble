@@ -1,9 +1,6 @@
 /* Light mode color palette */
 /* https://www.figma.com/color-palettes/arctic-reflection/ */
 
-/* Dark mode color palette */
-/* https://www.figma.com/color-palettes/arctic-reflection/ */
-
 * {
   margin: 0;
   padding: 0;
@@ -12,7 +9,7 @@
 }
 
 #canvas {
-  background: #f4fcfb;
+  background: #EAFBFF;
   width: 100%;
   height: 100vh;
   display: block;
@@ -31,6 +28,8 @@
 
   background: white;
   border-radius: 0.6rem;
+
+  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.1);
 }
 
 .tool-btn {
@@ -55,7 +54,7 @@
 }
 
 /* the + is used to access the next elemnt when the first condn is true */
-input:checked+.tool-btn {
+input:checked + .tool-btn {
   background: rgba(0, 0, 0, 0.2);
 }
 
@@ -83,6 +82,8 @@ input:checked+.tool-btn {
   border-radius: 0.5rem;
 
   font-weight: bold;
+
+  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.1);
 }
 
 /* colors */

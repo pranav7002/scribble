@@ -26,9 +26,9 @@ let currentToolCategory = "NONE";
 let selectedElements = [];
 let resizingKey = "REVERT";
 let movement = new Map();
-let currentColor = "#000000"; // default black
-let currentWidth = 3; // default stroke width
-let currentOpacity = 1; // default opaque
+let currentColor = "#0C8EF4"; // default black
+let currentWidth = 15; // default stroke width
+let currentOpacity = 0.6; // default opaque
 
 //events
 allColors.forEach((color) => {
@@ -489,3 +489,29 @@ window.addEventListener("keydown", (e) => {
         redo();
     }
 });
+
+//change cursor 
+canvas.addEventListener("mousemove", (e) => {
+  if (currentTool !== "selection-tool") {
+    canvas.style.cursor = "default"
+    return
+  }
+
+  let selected = selectedElements
+
+  if (selected.length === 0) {
+    canvas.style.cursor = "default"
+    return
+  }
+
+  let el = selected[0]
+  let bounds = getBounds(el)
+
+  let handle = getResizeHandle(e.clientX, e.clientY, bounds)
+
+  if (handle) {
+    canvas.style.cursor = "nwse-resize"   
+  } else {
+    canvas.style.cursor = "move"      
+  }
+})
