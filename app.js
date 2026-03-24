@@ -11,6 +11,7 @@ const allToolInputs = document.querySelectorAll("input[type='radio']");
 const allColors = document.querySelectorAll(".color");
 const allOpacity = document.querySelectorAll(".opacity-btn");
 const strokeSlider = document.getElementById("stroke");
+const clearBtn = document.getElementById("clear-tool");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -45,6 +46,13 @@ allOpacity.forEach((opacity) => {
 
 strokeSlider.addEventListener("input", (e) => {
     currentWidth = Number(e.target.value);
+});
+
+clearBtn.addEventListener("click", () => {
+    if (elements.length === 0) return;
+    elements = [];
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    localStorage.setItem("scribbleElements", JSON.stringify(elements));
 });
 
 allToolInputs.forEach((input) => {
@@ -203,6 +211,9 @@ canvas.addEventListener("mouseup", (e) => {
     movement.clear();
     undoStack.push([...elements]);
     redoStack.push([...elements]);
+    
+    // save the elements to local storage
+    localStorage.setItem("scribbleElements", JSON.stringify(elements));
 });
 
 //render function
@@ -459,13 +470,16 @@ const getResizeHandle = (clientX, clientY, bounds) => {
 
 //undo redo
 const undo = () => {
-  if (history.length === 0) return
+  if (undoStack.length === 0) return
 
   redoStack.push([...elements])
   elements = undoStack.pop()
 
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   render()
+  
+  // save the elements to local storage
+  localStorage.setItem("scribbleElements", JSON.stringify(elements));
 }
 
 const redo = () => {
@@ -476,6 +490,9 @@ const redo = () => {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   render()
+  
+  // save the elements to local storage
+  localStorage.setItem("scribbleElements", JSON.stringify(elements));
 }
 
 window.addEventListener("keydown", (e) => {
@@ -515,3 +532,10 @@ canvas.addEventListener("mousemove", (e) => {
     canvas.style.cursor = "move"      
   }
 })
+
+// load elements from local storage when the page loads
+const savedElements = localStorage.getItem("scribbleElements");
+if (savedElements) {
+    elements = JSON.parse(savedElements);
+    render();
+}
