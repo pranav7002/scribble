@@ -1,47 +1,123 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scribble</title>
+  <link rel="stylesheet" href="styles.css" />
   <script type="module" src="app.js" defer></script>
 </head>
+
 <body>
   <canvas id="canvas">Canvas</canvas>
+
   <div id="tool-bar" class="tool-bar">
-    <div>
-      <input type="radio" name="tool" id="line-tool">
-      <label for="line-tool">Line</label>
+    <div class="width-slider">
+      <input type="range" id="stroke" name="stroke" min="0" max="30" />
+      <label for="stroke">Stroke</label>
     </div>
-    <div>
-      <input type="radio" name="tool" id="rect-tool">
-      <label for="rect-too">Rectangle</label>
+
+    <input type="radio" name="tool" id="brush-tool" hidden />
+    <label for="brush-tool" class="tool-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+        <path fill="#0E0E0E" fill-rule="evenodd"
+          d="M11.423 1A3.577 3.577 0 0 1 15 4.577c0 .27-.108.53-.3.722l-.528.529l-1.971 1.971l-5.059 5.059a3 3 0 0 1-1.533.82l-2.638.528a1 1 0 0 1-1.177-1.177l.528-2.638a3 3 0 0 1 .82-1.533l5.059-5.059l2.5-2.5c.191-.191.451-.299.722-.299m-2.31 4.009l-4.91 4.91a1.5 1.5 0 0 0-.41.766l-.38 1.903l1.902-.38a1.5 1.5 0 0 0 .767-.41l4.91-4.91a2.077 2.077 0 0 0-1.88-1.88Zm3.098.658a3.59 3.59 0 0 0-1.878-1.879l1.28-1.28c.995.09 1.788.884 1.878 1.88l-1.28 1.28Z"
+          clip-rule="evenodd" />
+      </svg>
+    </label>
+
+    <input type="radio" name="tool" id="dash-brush-tool" hidden />
+    <label for="dash-brush-tool" class="tool-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+        <path fill="#0E0E0E" d="M112 476h160v72H112zm320 0h160v72H432zm320 0h160v72H752z" />
+      </svg>
+    </label>
+
+    <input type="radio" name="tool" id="dotted-brush-tool" hidden />
+    <label for="dotted-brush-tool" class="tool-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15 15">
+        <path fill="#000000" fill-rule="evenodd"
+          d="M1.5 6.625a.875.875 0 1 0 0 1.75a.875.875 0 0 0 0-1.75Zm4 0a.875.875 0 1 0 0 1.75a.875.875 0 0 0 0-1.75Zm4 0a.875.875 0 1 0 0 1.75a.875.875 0 0 0 0-1.75Zm3.125.875a.875.875 0 1 1 1.75 0a.875.875 0 0 1-1.75 0Z"
+          clip-rule="evenodd" />
+      </svg>
+    </label>
+
+    <input type="radio" name="tool" id="line-tool" hidden />
+    <label for="line-tool" class="tool-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path fill="#0E0E0E"
+          d="M21.71 3.29a1 1 0 0 0-1.42 0l-18 18a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0l18-18a1 1 0 0 0 0-1.42Z" />
+      </svg>
+    </label>
+
+    <input type="radio" name="tool" id="rect-tool" hidden />
+    <label for="rect-tool" class="tool-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -4 24 24">
+        <path fill="#0E0E0E"
+          d="M3 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H3zm0-2h14a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3V3a3 3 0 0 1 3-3z" />
+      </svg>
+    </label>
+
+    <input type="radio" name="tool" id="circle-tool" hidden />
+    <label for="circle-tool" class="tool-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path fill="#0E0E0E"
+          d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18ZM1 12C1 5.925 5.925 1 12 1s11 4.925 11 11s-4.925 11-11 11S1 18.075 1 12Z" />
+      </svg>
+    </label>
+
+    <input type="radio" name="tool" id="triangle-tool" hidden />
+    <label for="triangle-tool" class="tool-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path fill="none" stroke="#0E0E0E" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.8 4a2 2 0 0 0-3.6 0Z" />
+      </svg>
+    </label>
+
+    <input type="radio" name="tool" id="image-tool" hidden />
+    <label for="image-tool" class="tool-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <path fill="#0E0E0E"
+          d="M0 96c0-35.3 28.7-64 64-64h384c35.3 0 64 28.7 64 64v320c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zm323.8 106.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6l-26.5-33.1c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S78.8 416 88 416h336c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96a48 48 0 1 0 0 96z" />
+      </svg>
+    </label>
+
+    <input type="radio" name="tool" id="text-tool" hidden />
+    <label for="text-tool" class="tool-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="#0E0E0E">
+        <g fill="none" stroke="#0E0E0E" stroke-linejoin="round" stroke-width="4">
+          <rect width="36" height="36" x="6" y="6" rx="3" />
+          <path stroke-linecap="round" d="M16 19v-3h16v3M22 34h4m-2-16v16" />
+        </g>
+      </svg>
+    </label>
+
+    <input type="radio" name="tool" id="selection-tool" hidden />
+    <label for="selection-tool" class="tool-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path fill="none" stroke="#0E0E0E" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M2 9.2v3.6M12.8 2H9.2M7.5 20H9M20 7.5V9M2.133 4.699c.155-.727.415-1.274.854-1.712c.426-.426.954-.684 1.652-.84m15.228 2.552c-.155-.727-.415-1.274-.854-1.712c-.417-.417-.932-.673-1.608-.83M4.64 19.853c-.698-.156-1.226-.414-1.652-.84c-.43-.43-.69-.965-.845-1.673m11.638 3.626c-1.812.125-3.607-8.326-2.374-9.559s9.684.561 9.559 2.373c-.087 1.187-2.095 1.656-2.037 2.711c.018.309.408.59 1.188 1.154c.543.39 1.096.77 1.629 1.175a.66.66 0 0 1 .234.687a3.35 3.35 0 0 1-2.472 2.473a.66.66 0 0 1-.688-.235c-.404-.533-.784-1.086-1.175-1.628c-.563-.78-.844-1.17-1.153-1.188c-1.055-.059-1.524 1.95-2.71 2.037"
+          color="currentColor" />
+      </svg>
+    </label>
+  </div>
+  <div class="sidebar">
+    <label>Color</label>
+    <div class="colors">
+      <button class="color" id="c1"></button>
+      <button class="color" id="c2"></button>
+      <button class="color" id="c3"></button>
+      <button class="color" id="c4"></button>
     </div>
-    <div>
-      <input type="radio" name="tool" id="circle-tool">
-      <label for="circle-tool">Circle</label>
+
+    <label>Opacity</label>
+    <div class="opacity">
+      <button class="opacity-btn" id="o1"></button>
+      <button class="opacity-btn" id="o2"></button>
+      <button class="opacity-btn" id="o3"></button>
     </div>
-    <div>
-      <input type="radio" name="tool" id="triangle-tool">
-      <label for="triangle-tool">Triangle</label>
-    </div>
-    <div>
-      <input type="radio" name="tool" id="brush-tool">
-      <label for="brush-tool">Brush</label>
-    </div>
-    <div>
-      <input type="radio" name="tool" id="dash-brush-tool">
-      <label for="dash-brush-tool">Dash brush</label>
-    </div>
-    <div>
-      <input type="radio" name="tool" id="dotted-brush-tool">
-      <label for="dotted-brush-tool">Dot brush</label>
-    </div>
-    <div>
-      <input type="radio" name="tool" id="selection-tool">
-      <label for="selection-tool">Selection</label>
-    </div>  
   </div>
 </body>
+
 </html>

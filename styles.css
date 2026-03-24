@@ -1,15 +1,142 @@
+/* Light mode color palette */
+/* https://www.figma.com/color-palettes/arctic-reflection/ */
+
+/* Dark mode color palette */
+/* https://www.figma.com/color-palettes/arctic-reflection/ */
+
 * {
-  box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
+  border: 0;
+  font-family: sans-serif;
 }
 
 #canvas {
-  background-color: dodgerblue;
+  background: #f4fcfb;
+  width: 100%;
+  height: 100vh;
+  display: block;
 }
 
 .tool-bar {
   position: fixed;
-  top: 0;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  /* centering */
+
   display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+
+  background: white;
+  border-radius: 0.6rem;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+
+  border-radius: 0.3rem;
+}
+
+.tool-btn svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.tool-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* the + is used to access the next elemnt when the first condn is true */
+input:checked+.tool-btn {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.width-slider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.sidebar {
+  position: fixed;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+
+  font-weight: bold;
+}
+
+/* colors */
+.colors {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.color {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* opacity */
+.opacity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.opacity-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#c1 {
+  background-color: #0c287b;
+}
+
+#c2 {
+  background-color: #d3045d;
+}
+
+#c3 {
+  background-color: #0C8EF4;
+}
+
+#c4 {
+  background-color: #2B384C;
+}
+
+#o1 {
+  background-color: rgba(0, 0, 0, 1);
+}
+
+#o1 {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+#o1 {
+  background-color: rgba(0, 0, 0, 0.3);
 }
