@@ -22,9 +22,11 @@ let currentCanvasState = 'IDLE'
 let currentTool = 'NONE'
 let currentToolCategory = 'NONE'
 let selectedElements = []
+let resizingKey = 'REVERT'
 let movement = new Map()
 let currentColor = '#FF8DA1'
 let currentWidth = '5'
+let currentOpacity = 0.5
 
 //events
 allInputs.forEach((input) => {
@@ -49,23 +51,33 @@ canvas.addEventListener("mousedown", (e) => {
   currentCanvasState = "EDITING"
 
   if (currentTool === 'selection-tool') {
-    selectedElements = getSelectedElements(e)
-    selectedElements.forEach((el) => {
-      if (el.toolCategory === 'SHAPE') {
-        let offsetX = e.clientX - el.x1
-        let offsetY = e.clientY - el.y1
-        movement.set(el, {offsetX, offsetY})        
-      }
-      else if (el.toolCategory === 'FREEHAND') {
-        let offsets = []
-        el.points.forEach((p) => {
-          let offsetX = p.x - e.clientX
-          let offsetY = p.y - e.clientY
-          offsets.push({x: offsetX, y: offsetY})
-        })
-        movement.set(el, offsets)
-      }
-    })
+    // Always check resize handles first (only valid when exactly 1 element is selected)
+    resizingKey = 'REVERT'
+    if (selectedElements.length === 1) {
+      resizingKey = getResizeHandle(e.clientX, e.clientY, getBounds(selectedElements[0]))
+    }
+
+    // If not on a handle, attempt a fresh selection
+    if (resizingKey === 'REVERT') {
+      selectedElements = getSelectedElements(e)
+      selectedElements.forEach((el) => {
+        if (el.toolCategory === 'SHAPE') {
+          let offsetX = e.clientX - el.x1
+          let offsetY = e.clientY - el.y1
+          movement.set(el, { offsetX, offsetY })
+        }
+        else if (el.toolCategory === 'FREEHAND') {
+          let offsets = []
+          el.points.forEach((p) => {
+            let offsetX = p.x - e.clientX
+            let offsetY = p.y - e.clientY
+            offsets.push({ x: offsetX, y: offsetY })
+          })
+          movement.set(el, offsets)
+        }
+      })
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     render()
     return
@@ -78,6 +90,7 @@ canvas.addEventListener("mousedown", (e) => {
       y2: e.clientY,
       width: currentWidth,
       color: currentColor,
+      opacity: currentOpacity,
       tool: currentTool,
       toolCategory: currentToolCategory
     })
@@ -89,6 +102,7 @@ canvas.addEventListener("mousedown", (e) => {
       points: [{ x: e.clientX, y: e.clientY }],
       width: currentWidth,
       color: currentColor,
+      opacity: currentOpacity,
       tool: currentTool,
       toolCategory: currentToolCategory
     })
@@ -99,6 +113,32 @@ canvas.addEventListener("mousemove", (e) => {
   if (currentCanvasState !== 'EDITING') return
 
   if (currentTool === 'selection-tool') {
+    if (resizingKey !== 'REVERT') {
+      let el = selectedElements[0]
+
+      if (el.toolCategory === 'SHAPE') {
+        if (resizingKey === 'tl') {
+          el.x1 = e.clientX
+          el.y1 = e.clientY
+        }
+        if (resizingKey === 'tr') {
+          el.x2 = e.clientX
+          el.y1 = e.clientY
+        }
+        if (resizingKey === 'bl') {
+          el.x1 = e.clientX
+          el.y2 = e.clientY
+        }
+        if (resizingKey === 'br') {
+          el.x2 = e.clientX
+          el.y2 = e.clientY
+        }
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      render()
+      return
+    }
     selectedElements.forEach((el) => {
       if (el.toolCategory === 'SHAPE') {
         let { offsetX, offsetY } = movement.get(el)
@@ -142,6 +182,7 @@ canvas.addEventListener("mousemove", (e) => {
 
 canvas.addEventListener("mouseup", (e) => {
   currentCanvasState = 'IDLE'
+  resizingKey = 'REVERT'  
   movement.clear()
 })
 
@@ -155,6 +196,7 @@ const render = () => {
     ctx.lineCap = "round"
     ctx.lineJoin = "round"
     ctx.strokeStyle = element.color || "#000"
+    ctx.globalAlpha = element.opacity
     if (element.toolCategory === 'SHAPE') {
 
       let { x1, y1, x2, y2, tool } = element
@@ -371,4 +413,29 @@ const renderSelectionOutline = (x1, y1, width, height) => {
   ctx.strokeStyle = '#0000FF'
   ctx.strokeRect(x1, y1, width, height)
   ctx.strokeStyle = '#000000'
+}
+
+const getResizeHandle = (clientX, clientY, bounds) => {
+  const { x1, y1, width, height } = bounds
+  const size = 8
+
+  const handles = {
+    'tl': [x1, y1],
+    'tr': [x1 + width, y1],
+    'bl': [x1, y1 + height],
+    'br': [x1 + width, y1 + height]
+  }
+
+  for (let key in handles) {
+    let [x, y] = handles[key]
+
+    if (
+      Math.abs(clientX - x) < size &&
+      Math.abs(clientY - y) < size
+    ) {
+      return key
+    }
+  }
+
+  return 'REVERT'
 }
