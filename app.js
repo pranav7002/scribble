@@ -16,6 +16,10 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let elements = [];
+
+let undoStack = []; //for undo redo
+let redoStack = [];
+
 let currentCanvasState = "IDLE";
 let currentTool = "NONE";
 let currentToolCategory = "NONE";
@@ -197,6 +201,8 @@ canvas.addEventListener("mouseup", (e) => {
     currentCanvasState = "IDLE";
     resizingKey = "REVERT";
     movement.clear();
+    undoStack.push([...elements]);
+    redoStack.push([...elements]);
 });
 
 //render function
@@ -450,3 +456,36 @@ const getResizeHandle = (clientX, clientY, bounds) => {
 
     return "REVERT";
 };
+
+//undo redo
+const undo = () => {
+  if (history.length === 0) return
+
+  redoStack.push([...elements])
+  elements = undoStack.pop()
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  render()
+}
+
+const redo = () => {
+  if (redoStack.length === 0) return
+
+  undoStack.push([...elements])
+  elements = redoStack.pop()
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  render()
+}
+
+window.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === "z") {
+        e.preventDefault();
+        undo();
+    }
+
+    if (e.ctrlKey && e.key === "y") {
+        e.preventDefault();
+        redo();
+    }
+});
