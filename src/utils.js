@@ -33,7 +33,12 @@ export const getBounds = (element) => {
 
     if (element.tool === "circle-tool") {
         let r = dist(element.x1, element.y1, element.x2, element.y2);
-        return { x1: element.x1 - r, y1: element.y1 - r, width: 2 * r, height: 2 * r };
+        return {
+            x1: element.x1 - r,
+            y1: element.y1 - r,
+            width: 2 * r,
+            height: 2 * r,
+        };
     }
 
     if (
@@ -58,10 +63,28 @@ export const getBounds = (element) => {
 };
 
 export const renderSelectionOutline = (x1, y1, width, height) => {
+    let x2 = x1 + width;
+    let y2 = y1 + height;
+
+    let corners = [{ x: x1, y: y1 }, { x: x2, y: y2 }, { x: x1, y: y2 }, { x: x2, y: y1 }]
+
+    ctx.save();
     ctx.strokeStyle = "#0000FF";
     ctx.setLineDash([10, 15]);
     ctx.strokeRect(x1, y1, width, height);
     ctx.strokeStyle = "#000000";
+    ctx.restore();
+
+    corners.forEach((c) => {
+        let side = 8
+        let x = c.x - 4
+        let y = c.y - 4
+
+        ctx.save();
+        ctx.fillStyle = "#0000FF";
+        ctx.fillRect(x, y, side, side)
+        ctx.restore()
+    })
 };
 
 export const getResizeHandle = (clientX, clientY, bounds) => {
@@ -84,3 +107,9 @@ export const getResizeHandle = (clientX, clientY, bounds) => {
 
     return "REVERT";
 };
+
+export const loadImage = async (url) => {
+    const response = await fetch(url);
+    const blob = response.ok && await response.blob();
+    return createImageBitmap(blob);
+}

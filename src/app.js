@@ -1,12 +1,21 @@
 import {
-    canvas, ctx,
-    allToolInputs, allColors, allOpacity, strokeSlider, clearBtn
+    canvas,
+    ctx,
+    allToolInputs,
+    allColors,
+    allOpacity,
+    strokeSlider,
+    clearBtn
 } from "./constants.js";
 
 import {
-    dist, area,
-    getDiagonalCorners, getBounds,
-    renderSelectionOutline, getResizeHandle,
+    dist,
+    area,
+    getDiagonalCorners,
+    getBounds,
+    renderSelectionOutline,
+    getResizeHandle,
+    loadImage
 } from "./utils.js";
 
 // MUTABLE STATE VARIABLES
@@ -92,6 +101,21 @@ const render = () => {
                 }
                 ctx.stroke();
             }
+        } else if (element.toolCategory === "IMAGE") {
+            let { x1, y1, x2, y2, state } = element;
+            let width = Math.abs(x2 - x1);
+            let height = Math.abs(y2 - y1);
+            console.log(width, height)
+
+            if (state === "image") {
+                ctx.drawImage(element.bitmap, x1, y1, width, height)
+            }
+            else if (state === "placeholder") {
+                ctx.setLineDash([6, 15]);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#000000";
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+            }
         }
         ctx.restore();
     });
@@ -155,6 +179,7 @@ const getSelectedElements = ({ clientX, clientY }) => {
     return selected;
 };
 
+
 // EVENTS
 
 allColors.forEach((color) => {
@@ -191,6 +216,8 @@ allToolInputs.forEach((input) => {
             currentToolCategory = "FREEHAND";
         } else if (e.target.id === "selection-tool") {
             currentToolCategory = "SELECTION";
+        } else if (e.target.id === "image-tool") {
+            currentToolCategory = "IMAGE";
         } else {
             currentToolCategory = "SHAPE";
         }
@@ -205,7 +232,11 @@ canvas.addEventListener("mousedown", (e) => {
     if (currentTool === "selection-tool") {
         resizingKey = "REVERT";
         if (selectedElements.length === 1) {
-            resizingKey = getResizeHandle(e.clientX, e.clientY, getBounds(selectedElements[0]));
+            resizingKey = getResizeHandle(
+                e.clientX,
+                e.clientY,
+                getBounds(selectedElements[0]),
+            );
         }
 
         if (resizingKey === "REVERT") {
@@ -230,18 +261,37 @@ canvas.addEventListener("mousedown", (e) => {
         return;
     } else if (currentToolCategory === "SHAPE") {
         elements.push({
-            x1: e.clientX, y1: e.clientY,
-            x2: e.clientX, y2: e.clientY,
-            width: currentWidth, color: currentColor,
-            opacity: currentOpacity, tool: currentTool,
+            x1: e.clientX,
+            y1: e.clientY,
+            x2: e.clientX,
+            y2: e.clientY,
+            width: currentWidth,
+            color: currentColor,
+            opacity: currentOpacity,
+            tool: currentTool,
             toolCategory: currentToolCategory,
         });
     } else if (currentToolCategory === "FREEHAND") {
         elements.push({
-            x1: e.clientX, y1: e.clientY,
+            x1: e.clientX,
+            y1: e.clientY,
             points: [{ x: e.clientX, y: e.clientY }],
-            width: currentWidth, color: currentColor,
-            opacity: currentOpacity, tool: currentTool,
+            width: currentWidth,
+            color: currentColor,
+            opacity: currentOpacity,
+            tool: currentTool,
+            toolCategory: currentToolCategory,
+        });
+    } else if (currentToolCategory === "IMAGE") {
+        elements.push({
+            x1: e.clientX,
+            y1: e.clientY,
+            x2: e.clientX,
+            y2: e.clientY,
+            url: "",
+            bitmap: "",
+            state: "placeholder",
+            tool: currentTool,
             toolCategory: currentToolCategory,
         });
     }
@@ -254,10 +304,22 @@ canvas.addEventListener("mousemove", (e) => {
         if (resizingKey !== "REVERT") {
             let el = selectedElements[0];
             if (el.toolCategory === "SHAPE") {
-                if (resizingKey === "tl") { el.x1 = e.clientX; el.y1 = e.clientY; }
-                if (resizingKey === "tr") { el.x2 = e.clientX; el.y1 = e.clientY; }
-                if (resizingKey === "bl") { el.x1 = e.clientX; el.y2 = e.clientY; }
-                if (resizingKey === "br") { el.x2 = e.clientX; el.y2 = e.clientY; }
+                if (resizingKey === "tl") {
+                    el.x1 = e.clientX;
+                    el.y1 = e.clientY;
+                }
+                if (resizingKey === "tr") {
+                    el.x2 = e.clientX;
+                    el.y1 = e.clientY;
+                }
+                if (resizingKey === "bl") {
+                    el.x1 = e.clientX;
+                    el.y2 = e.clientY;
+                }
+                if (resizingKey === "br") {
+                    el.x2 = e.clientX;
+                    el.y2 = e.clientY;
+                }
             }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render();
@@ -269,8 +331,10 @@ canvas.addEventListener("mousemove", (e) => {
                 let { offsetX, offsetY } = movement.get(el);
                 let dx = e.clientX - el.x1 - offsetX;
                 let dy = e.clientY - el.y1 - offsetY;
-                el.x1 += dx; el.x2 += dx;
-                el.y1 += dy; el.y2 += dy;
+                el.x1 += dx;
+                el.x2 += dx;
+                el.y1 += dy;
+                el.y2 += dy;
             } else if (el.toolCategory === "FREEHAND") {
                 let offsets = movement.get(el);
                 for (let i = 0; i < el.points.length; i++) {
@@ -290,6 +354,9 @@ canvas.addEventListener("mousemove", (e) => {
         el.y2 = e.clientY;
     } else if (currentToolCategory === "FREEHAND") {
         el.points.push({ x: e.clientX, y: e.clientY });
+    } else if (currentToolCategory === "IMAGE") {
+        el.x2 = e.clientX;
+        el.y2 = e.clientY;
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -297,11 +364,23 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 canvas.addEventListener("mouseup", () => {
+    let el = elements[elements.length - 1];
+    if (el.tool === "image-tool") {
+
+        el.state = "image"
+        let url = `https://picsum.photos/${Math.abs(el.x2 - el.x1)}/${Math.abs(el.y2 - el.y1)}/`
+        el.url = url
+
+        loadImage(el.url).then((bitmap) => {
+            el.bitmap = bitmap;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            render();
+        });
+    }
+
     currentCanvasState = "IDLE";
     resizingKey = "REVERT";
     movement.clear();
-    undoStack.push([...elements]);
-    redoStack.push([...elements]);
     localStorage.setItem("scribbleElements", JSON.stringify(elements));
 });
 
@@ -315,14 +394,34 @@ canvas.addEventListener("mousemove", (e) => {
         canvas.style.cursor = "default";
         return;
     }
-    let handle = getResizeHandle(e.clientX, e.clientY, getBounds(selectedElements[0]));
+    let handle = getResizeHandle(
+        e.clientX,
+        e.clientY,
+        getBounds(selectedElements[0]),
+    );
     canvas.style.cursor = handle !== "REVERT" ? "nwse-resize" : "move";
 });
 
 // INITAL LOADING FROM LOCAL STORAGE
 
 const savedElements = localStorage.getItem("scribbleElements");
+
 if (savedElements) {
     elements = JSON.parse(savedElements);
-    render();
+
+    let promises = [];
+
+    elements.forEach((el) => {
+        if (el.toolCategory === "IMAGE" && el.url) {
+            promises.push(
+                loadImage(el.url).then(bitmap => {
+                    el.bitmap = bitmap;
+                })
+            );
+        }
+    });
+
+    Promise.all(promises).then(() => render());
 }
+
+

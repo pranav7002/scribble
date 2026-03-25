@@ -5,7 +5,7 @@
   margin: 0;
   padding: 0;
   border: 0;
-  font-family: sans-serif;
+  font-family: "Pixelify Sans", sans-serif;
 }
 
 #canvas {
@@ -63,7 +63,10 @@ input:checked + .tool-btn {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+}
+
+input[type="range"] {
+  accent-color: rgb(43, 56, 76);
 }
 
 .sidebar {
@@ -80,8 +83,6 @@ input:checked + .tool-btn {
   padding: 1rem;
   background: white;
   border-radius: 0.5rem;
-
-  font-weight: bold;
 
   box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.1);
 }
