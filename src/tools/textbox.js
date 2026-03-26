@@ -1,3 +1,5 @@
+import { renderSelectionUI } from "../utils";
+
 export const hitTestTextbox = (el, x, y) => {
 	const { x1, y1, x2, y2 } = getBoundsTextbox(el);
 	return x >= x1 && x <= x2 && y >= y1 && y <= y2;
@@ -14,28 +16,12 @@ export const renderTextbox = (el, ctx) => {
 	let { x1, y1, x2, y2, state } = el;
 
 	if (state === "placeholder") {
-		let corners = [
-			{ x: x1, y: y1 },
-			{ x: x2, y: y2 },
-			{ x: x1, y: y2 },
-			{ x: x2, y: y1 },
-		];
-
-		corners.forEach((c) => {
-			let side = 6;
-			let cx = c.x - 3;
-			let cy = c.y - 3;
-
-			ctx.save();
-			ctx.fillStyle = "#000000";
-			ctx.fillRect(cx, cy, side, side);
-			ctx.restore();
-		});
-
-		ctx.setLineDash([4, 8]);
-		ctx.lineWidth = 1;
-		ctx.strokeStyle = "#000000";
-		ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+		renderSelectionUI(el, ctx, {
+			showHandles: true,
+			color: "#000000",
+			padding: 0,
+			handleSize: 6,
+		})
 
 		({ x1, y1, x2, y2 } = getDiagonalCorners(el));
 		let height = y2 - y1;
@@ -49,10 +35,12 @@ export const renderTextbox = (el, ctx) => {
 		let before = activeTextBox.before;
 		let after = activeTextBox.after;
 
-		ctx.setLineDash([4, 8]);
-		ctx.lineWidth = 1;
-		ctx.strokeStyle = "#000000";
-		ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+		renderSelectionUI(el, ctx, {
+			showHandles: false,
+			color: "#000000",
+			padding: 0,
+			handleSize: 0,
+		})
 
 		({ x1, y1, x2, y2 } = getDiagonalCorners(el));
 		let height = y2 - y1;

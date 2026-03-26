@@ -1,5 +1,3 @@
-import { ctx } from "./constants.js";
-
 export const dist = (x1, y1, x2, y2) => {
     let dx = x2 - x1;
     let dy = y2 - y1;
@@ -18,78 +16,6 @@ export const getDiagonalCorners = ({ x1, y1, x2, y2 }) => {
         x2: Math.max(x1, x2),
         y2: Math.max(y1, y2),
     };
-};
-
-export const getBounds = (element) => {
-    let { x1, y1, x2, y2 } = getDiagonalCorners(element);
-
-    if (
-        element.tool === "rect-tool" ||
-        element.tool === "line-tool" ||
-        element.tool === "triangle-tool"
-    ) {
-        return { x1, y1, width: x2 - x1, height: y2 - y1 };
-    }
-
-    if (element.tool === "circle-tool") {
-        let r = dist(element.x1, element.y1, element.x2, element.y2);
-        return {
-            x1: element.x1 - r,
-            y1: element.y1 - r,
-            width: 2 * r,
-            height: 2 * r,
-        };
-    }
-
-    if (
-        element.tool === "brush-tool" ||
-        element.tool === "dotted-brush-tool" ||
-        element.tool === "dash-brush-tool"
-    ) {
-        let minX = element.points[0].x;
-        let maxX = element.points[0].x;
-        let minY = element.points[0].y;
-        let maxY = element.points[0].y;
-
-        for (let i = 1; i < element.points.length; i++) {
-            minX = Math.min(minX, element.points[i].x);
-            minY = Math.min(minY, element.points[i].y);
-            maxX = Math.max(maxX, element.points[i].x);
-            maxY = Math.max(maxY, element.points[i].y);
-        }
-
-        return { x1: minX, y1: minY, width: maxX - minX, height: maxY - minY };
-    }
-    
-    if (element.tool === "text-tool" || element.tool === "image-tool") {
-        return { x1, y1, width: x2 - x1, height: y2 - y1 };
-    }
-
-};
-
-export const renderSelectionOutline = (x1, y1, width, height) => {
-    let x2 = x1 + width;
-    let y2 = y1 + height;
-
-    let corners = [{ x: x1, y: y1 }, { x: x2, y: y2 }, { x: x1, y: y2 }, { x: x2, y: y1 }]
-
-    ctx.save();
-    ctx.strokeStyle = "rgb(12, 142, 244)";
-    ctx.setLineDash([10, 15]);
-    ctx.strokeRect(x1, y1, width, height);
-    ctx.strokeStyle = "#000000";
-    ctx.restore();
-
-    corners.forEach((c) => {
-        let side = 8
-        let x = c.x - 4
-        let y = c.y - 4
-
-        ctx.save();
-        ctx.fillStyle = "rgb(12, 142, 244)";
-        ctx.fillRect(x, y, side, side)
-        ctx.restore()
-    })
 };
 
 export const getResizeHandle = (clientX, clientY, bounds) => {
@@ -119,10 +45,50 @@ export const loadImage = async (url) => {
     return createImageBitmap(blob);
 }
 
-export const isTextBoxHit = (x1, y1, x2, y2, clientX, clientY) => {
-    if (clientX >= x1 && clientX <= x2 && clientY >= y1 && clientY <= y2) {
-        return true
-    } else {
-        return false
-    }
-}
+export const renderSelectionUI = (el, ctx, options = {}) => {
+    const {
+        showHandles = true,
+        color = "rgb(12, 142, 244)",
+        padding = 6,
+        handleSize = 8,
+    } = options;
+
+    const x1 = Math.min(el.x1, el.x2);
+    const y1 = Math.min(el.y1, el.y2);
+    const x2 = Math.max(el.x1, el.x2);
+    const y2 = Math.max(el.y1, el.y2);
+
+    const width = x2 - x1;
+    const height = y2 - y1;
+
+    const px1 = x1 - padding;
+    const py1 = y1 - padding;
+    const pwidth = width + 2 * padding;
+    const pheight = height + 2 * padding;
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.setLineDash([6, 6]);
+    ctx.strokeRect(px1, py1, pwidth, pheight);
+    ctx.restore();
+
+    if (!showHandles) return;
+
+    const corners = [
+        { x: px1, y: py1 },
+        { x: px1 + pwidth, y: py1 },
+        { x: px1, y: py1 + pheight },
+        { x: px1 + pwidth, y: py1 + pheight },
+    ];
+
+    corners.forEach((c) => {
+        const cx = c.x - handleSize / 2;
+        const cy = c.y - handleSize / 2;
+
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.fillRect(cx, cy, handleSize, handleSize);
+        ctx.restore();
+    });
+};
+

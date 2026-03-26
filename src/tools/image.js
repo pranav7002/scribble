@@ -1,3 +1,4 @@
+import { renderSelectionUI } from "../utils";
 import { resizeRect } from "./rect";
 
 export const hitTestImage = (el, x, y) => {
@@ -5,46 +6,24 @@ export const hitTestImage = (el, x, y) => {
   const { x1, y1, x2, y2 } = getBoundsImage(el);
 
   return x >= x1 && x <= x2 && y >= y1 && y <= y2;
-  
-  return false
 }
 
 export const renderImage = (el, ctx) => {
   ctx.save();
-  ctx.lineWidth = el.width;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = el.color || "#000";
-  ctx.globalAlpha = el.opacity;
 
   if (el.state === "image") {
     ctx.drawImage(el.bitmap, el.x1, el.y1, el.x2 - el.x1, el.y2 - el.y1);
   } else if (el.state === "placeholder") {
-    let corners = [
-      { x: el.x1, y: el.y1 },
-      { x: el.x2, y: el.y2 },
-      { x: el.x1, y: el.y2 },
-      { x: el.x2, y: el.y1 },
-    ];
-    corners.forEach((c) => {
-      let side = 6;
-      let x = c.x - 3;
-      let y = c.y - 3;
-
-      ctx.save();
-      ctx.fillStyle = "#000000";
-      ctx.fillRect(x, y, side, side);
-      ctx.restore();
+    renderSelectionUI(el, ctx, {
+      showHandles: true,
+      color: "#000000",
+      padding: 0,
+      handleSize: 6,
     });
-
-    ctx.setLineDash([4, 8]);
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = "#000000";
-    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
   }
 
   ctx.restore();
-}
+};
 
 export const moveImage = (el, dx, dy) => {
   el.x1 += dx
