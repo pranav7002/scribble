@@ -324,8 +324,11 @@ canvas.addEventListener("mousedown", (e) => {
             )
         ) {
             activeTextBox.element.state = "typed";
-            let width = ctx.measureText(activeTextBox.element.text).width
-            activeTextBox.element.x2 = activeTextBox.element.x1 + width
+            let el = activeTextBox.element;
+            let { x1, y1, x2, y2 } = getDiagonalCorners(el);
+            ctx.font = `${y2 - y1 - 2}px Pixelify Sans`;
+            let width = ctx.measureText(el.text).width;
+            el.x2 = x1 + width;
             activeTextBox = {
                 element: null,
                 before: "",
@@ -456,8 +459,8 @@ canvas.addEventListener("mousemove", (e) => {
         selectedElements.forEach((el) => {
             if (
                 el.toolCategory === "SHAPE" ||
-                el.tool === "text-tool" ||
-                el.tool === "image-tool"
+                el.toolCategory === "TEXT" ||
+                el.toolCategory === "IMAGE"
             ) {
                 let { offsetX, offsetY } = movement.get(el);
                 let dx = e.clientX - el.x1 - offsetX;
@@ -624,3 +627,4 @@ const clearSelection = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     render();
 };
+
