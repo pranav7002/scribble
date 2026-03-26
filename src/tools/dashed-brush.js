@@ -1,12 +1,12 @@
-import { dist } from "../utils";
+import { dist } from "../utils.js";
 
 export const renderDashedBrush = (el, ctx) => {
   ctx.save();
-  ctx.lineWidth = el.width;
+  ctx.lineWidth = el.style.width;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = el.color || "#000";
-  ctx.globalAlpha = el.opacity;
+  ctx.strokeStyle = el.style.color || "#000";
+  ctx.globalAlpha = el.style.opacity;
 
   ctx.setLineDash([10, 20]);
   ctx.beginPath();

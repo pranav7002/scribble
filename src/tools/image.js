@@ -1,5 +1,5 @@
-import { renderSelectionUI } from "../utils";
-import { resizeRect } from "./rect";
+import { renderSelectionUI, loadImage } from "../utils.js";
+import { resizeRect } from "./rect.js";
 
 export const hitTestImage = (el, x, y) => {
 
@@ -11,10 +11,10 @@ export const hitTestImage = (el, x, y) => {
 export const renderImage = (el, ctx) => {
   ctx.save();
 
-  if (el.state === "image") {
-    ctx.drawImage(el.bitmap, el.x1, el.y1, el.x2 - el.x1, el.y2 - el.y1);
+  if (el.state === "image" && el.data.bitmap instanceof ImageBitmap) {
+    ctx.drawImage(el.data.bitmap, el.x1, el.y1, el.x2 - el.x1, el.y2 - el.y1);
   } else if (el.state === "placeholder") {
-    renderSelectionUI(el, ctx, {
+    renderSelectionUI(getBoundsImage(el), ctx, {
       showHandles: true,
       color: "#000000",
       padding: 0,
@@ -46,25 +46,16 @@ export const getBoundsImage = (el) => {
 export const fetchImage = (el) => {
   el.state = "image";
   let url = `https://picsum.photos/${Math.abs(el.x2 - el.x1)}/${Math.abs(el.y2 - el.y1)}`;
-  el.url = url;
+  el.data.url = url;
 
-  loadImage(el.url).then((bitmap) => {
-    el.bitmap = bitmap;
+  loadImage(el.data.url).then((bitmap) => {
+    el.data.bitmap = bitmap;
   });
 }
 
-export const refectchImages = (elements) => {
-    let promises = [];
-
-    elements.forEach((el) => {
-        if (el.toolCategory === "IMAGE" && el.url) {
-            promises.push(
-                loadImage(el.url).then((bitmap) => {
-                    el.bitmap = bitmap;
-                }),
-            );
-        }
-    });
-
-    Promise.all(promises).then(() => render());
+export const refetchImages = (el) => {
+  return loadImage(el.data.url).then((bitmap) => {
+    el.data.bitmap = bitmap;
+    return bitmap;
+  });
 }

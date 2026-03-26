@@ -1,5 +1,5 @@
-import { dist } from "../utils";
-import { resizeRect } from "./rect";
+import { dist } from "../utils.js";
+import { resizeRect } from "./rect.js";
 
 export const hitTestCircle = (el, x, y) => {
   let r = dist(el.x1, el.y1, el.x2, el.y2);
@@ -10,11 +10,11 @@ export const hitTestCircle = (el, x, y) => {
 
 export const renderCircle = (el, ctx) => {
   ctx.save();
-  ctx.lineWidth = el.width;
+  ctx.lineWidth = el.style.width;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = el.color || "#000";
-  ctx.globalAlpha = el.opacity;
+  ctx.strokeStyle = el.style.color || "#000";
+  ctx.globalAlpha = el.style.opacity;
 
   let rad = dist(el.x1, el.y1, el.x2, el.y2);
   ctx.beginPath();

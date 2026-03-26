@@ -1,4 +1,4 @@
-import { dist } from "../utils";
+import { dist } from "../utils.js";
 
 export const hitTestBrush = (el, x, y) => {
   for (let i = 0; i < el.points.length - 1; i++) {
@@ -16,11 +16,11 @@ export const hitTestBrush = (el, x, y) => {
 
 export const renderSolidBrush = (el, ctx) => {
   ctx.save();
-  ctx.lineWidth = el.width;
+  ctx.lineWidth = el.style.width;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = el.color || "#000";
-  ctx.globalAlpha = el.opacity;
+  ctx.strokeStyle = el.style.color || "#000";
+  ctx.globalAlpha = el.style.opacity;
 
   ctx.beginPath();
   let { x, y } = el.points[0];

@@ -7,11 +7,11 @@ export const hitTestRect = (el, x, y) => {
 
 export const renderRect = (el, ctx) => {
 	ctx.save();
-	ctx.lineWidth = el.width;
+	ctx.lineWidth = el.style.width;
 	ctx.lineCap = "round";
 	ctx.lineJoin = "round";
-	ctx.strokeStyle = el.color || "#000";
-	ctx.globalAlpha = el.opacity;
+	ctx.strokeStyle = el.style.color || "#000";
+	ctx.globalAlpha = el.style.opacity;
 	ctx.strokeRect(el.x1, el.y1, el.x2 - el.x1, el.y2 - el.y1);
 	ctx.restore();
 }

@@ -1,5 +1,5 @@
-import { area } from "../utils";
-import { resizeRect } from "./rect";
+import { area } from "../utils.js";
+import { resizeRect } from "./rect.js";
 
 export const hitTestTriangle = (el, x, y) => {
   let { x1, y1, x2, y2 } = el
@@ -17,11 +17,11 @@ export const hitTestTriangle = (el, x, y) => {
 
 export const renderTriangle = (el, ctx) => {
   ctx.save();
-  ctx.lineWidth = el.width;
+  ctx.lineWidth = el.style.width;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = el.color || "#000";
-  ctx.globalAlpha = el.opacity;
+  ctx.strokeStyle = el.style.color || "#000";
+  ctx.globalAlpha = el.style.opacity;
 
   ctx.beginPath();
   ctx.moveTo(el.x1, el.y1);

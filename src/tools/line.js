@@ -1,5 +1,5 @@
-import { dist } from "../utils";
-import { resizeRect } from "./rect";
+import { dist } from "../utils.js";
+import { resizeRect } from "./rect.js";
 
 export const hitTestLine = (el, x, y) => {
     let d1 = dist(el.x1, el.y1, x, y);
@@ -12,11 +12,11 @@ export const hitTestLine = (el, x, y) => {
 
 export const renderLine = (el, ctx) => {
     ctx.save();
-    ctx.lineWidth = el.width;
+    ctx.lineWidth = el.style.width;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = el.color || "#000";
-    ctx.globalAlpha = el.opacity;
+    ctx.strokeStyle = el.style.color || "#000";
+    ctx.globalAlpha = el.style.opacity;
 
     ctx.beginPath();
     ctx.moveTo(el.x1, el.y1);

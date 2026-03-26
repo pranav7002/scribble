@@ -1,3 +1,4 @@
+
 export const dist = (x1, y1, x2, y2) => {
     let dx = x2 - x1;
     let dy = y2 - y1;
@@ -18,20 +19,19 @@ export const getDiagonalCorners = ({ x1, y1, x2, y2 }) => {
     };
 };
 
-export const getResizeHandle = (x, y, bounds) => {
-    const { x1, y1, width, height } = bounds;
+export const getResizeHandle = (x, y, { x1, y1, x2, y2 }) => {
     const size = 15;
 
     const handles = {
         tl: [x1, y1],
-        tr: [x1 + width, y1],
-        bl: [x1, y1 + height],
-        br: [x1 + width, y1 + height],
+        tr: [x2, y1],
+        bl: [x1, y2],
+        br: [x2, y2],
     };
 
     for (let key in handles) {
-        let [x, y] = handles[key];
-        if (Math.abs(x - x) < size && Math.abs(y - y) < size) {
+        let [hx, hy] = handles[key];
+        if (Math.abs(x - hx) < size && Math.abs(y - hy) < size) {
             return key;
         }
     }
@@ -45,18 +45,13 @@ export const loadImage = async (url) => {
     return createImageBitmap(blob);
 }
 
-export const renderSelectionUI = (el, ctx, options = {}) => {
+export const renderSelectionUI = ({ x1, y1, x2, y2 }, ctx, options = {}) => {
     const {
         showHandles = true,
         color = "rgb(12, 142, 244)",
         padding = 6,
         handleSize = 8,
     } = options;
-
-    const x1 = Math.min(el.x1, el.x2);
-    const y1 = Math.min(el.y1, el.y2);
-    const x2 = Math.max(el.x1, el.x2);
-    const y2 = Math.max(el.y1, el.y2);
 
     const width = x2 - x1;
     const height = y2 - y1;

@@ -4,7 +4,7 @@ import {
     moveRect,
     resizeRect,
     getBoundsRect,
-} from "./tools/rect";
+} from "./tools/rect.js";
 
 import {
     renderLine,
@@ -12,7 +12,7 @@ import {
     moveLine,
     resizeLine,
     getBoundsLine,
-} from "./tools/line";
+} from "./tools/line.js";
 
 import {
     renderCircle,
@@ -20,7 +20,7 @@ import {
     moveCircle,
     resizeCircle,
     getBoundsCircle,
-} from "./tools/circle";
+} from "./tools/circle.js";
 
 import {
     renderTriangle,
@@ -28,22 +28,22 @@ import {
     moveTriangle,
     resizeTriangle,
     getBoundsTriangle,
-} from "./tools/triangle";
+} from "./tools/triangle.js";
 
 import {
     renderSolidBrush,
     hitTestBrush,
     moveBrush,
     getBoundsBrush,
-} from "./tools/solid-brush";
+} from "./tools/solid-brush.js";
 
 import {
     renderDashedBrush,
-} from "./tools/dashed-brush";
+} from "./tools/dashed-brush.js";
 
 import {
     renderDottedBrush,
-} from "./tools/dotted-brush";
+} from "./tools/dotted-brush.js";
 
 import {
     renderImage,
@@ -52,8 +52,8 @@ import {
     resizeImage,
     getBoundsImage,
     fetchImage,
-    refectchImages,
-} from "./tools/image";
+    refetchImages,
+} from "./tools/image.js";
 
 import {
     renderTextbox,
@@ -64,14 +64,12 @@ import {
     textboxKeydownHandler,
     textboxMouseupHandler,
     defocusTextbox,
-} from "./tools/textbox";
+} from "./tools/textbox.js";
 
 import {
     renderSelectionUI,
     getResizeHandle,
-    dist,
-    area,
-} from "./utils";
+} from "./utils.js";
 
 //CONSTANTS
 
@@ -82,6 +80,8 @@ const allColors = document.querySelectorAll(".color");
 const allOpacity = document.querySelectorAll(".opacity-btn");
 const strokeSlider = document.getElementById("stroke");
 const clearBtn = document.getElementById("clear-tool");
+
+
 
 // STATE VARIABLES
 
@@ -116,7 +116,7 @@ const renderElement = (el, ctx) => {
     if (el.tool === "dotted-brush-tool") return renderDottedBrush(el, ctx);
 
     if (el.tool === "image-tool") return renderImage(el, ctx);
-    if (el.tool === "text-tool") return renderTextbox(el, ctx);
+    if (el.tool === "text-tool") return renderTextbox(el, ctx, activeTextBox);
 };
 
 const render = (elements, selectedElements, ctx) => {
@@ -125,7 +125,7 @@ const render = (elements, selectedElements, ctx) => {
     })
 
     selectedElements.forEach(el => {
-        renderSelectionUI(el, ctx, {
+        renderSelectionUI(getBounds(el), ctx, {
             showHandles: true,
             color: "rgb(12, 142, 244)",
             padding: 6,
@@ -133,6 +133,16 @@ const render = (elements, selectedElements, ctx) => {
         })
     });
 }
+
+// SIZE CANVAS TO MATCH CSS DISPLAY SIZE
+const resizeCanvas = () => {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    render(elements, selectedElements, ctx);
+};
+canvas.width = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
+window.addEventListener("resize", resizeCanvas);
 
 
 // SELECTION 
@@ -150,14 +160,14 @@ const isHit = (el, x, y) => {
 }
 
 const getSelectedElements = (elements, x, y) => {
-    let selected = []
+    let selected = [];
 
     elements.forEach(el => {
-        if (isHit(el, x, y)) selected.push(el)
+        if (isHit(el, x, y)) selected.push(el);
     })
 
-    return selected
-};
+    return selected;
+}
 
 //MOVEMENT
 
@@ -231,9 +241,9 @@ const resizeElement = (el, handle, x, y) => {
     if (el.tool === "text-tool") return;
 }
 
-// BOUNDS DISPATCHER
+// BOUNDS
 
-const getBounds = (el) => {
+export const getBounds = (el) => {
     if (el.tool === "rect-tool") return getBoundsRect(el);
     if (el.tool === "line-tool") return getBoundsLine(el);
     if (el.tool === "circle-tool") return getBoundsCircle(el);
@@ -303,6 +313,9 @@ const createElement = (x, y) => {
                 opacity: currentOpacity,
             },
             state: "placeholder",
+            data: {
+                text: ""
+            }
         };
     }
 
@@ -342,14 +355,15 @@ canvas.addEventListener("mousedown", (e) => {
     if (currentTool === "NONE") return;
 
     if (activeTextBox.element) {
-        if (isHit(activeTextBox.element, e.clientX, e.clientY)) {
-            defocusTextbox(activeTextBox.element)
+        if (!isHit(activeTextBox.element, e.clientX, e.clientY)) {
+            activeTextBox = defocusTextbox(activeTextBox.element, ctx, activeTextBox);
         }
     }
 
     currentCanvasState = "EDITING";
 
     if (currentTool === "selection-tool") {
+        selectedElements = getSelectedElements(elements, e.clientX, e.clientY);
         resizeHandle = null;
         if (selectedElements.length === 1) {
             resizeHandle = getResizeHandle(e.clientX, e.clientY, getBounds(selectedElements[0]));
@@ -410,7 +424,7 @@ canvas.addEventListener("mouseup", () => {
     if (el.tool === "image-tool") {
         fetchImage(el);
     } else if (el.tool === "text-tool" && el.state === "placeholder") {
-        textboxMouseupHandler(el)
+        activeTextBox = textboxMouseupHandler(el, activeTextBox)
     }
 
     currentCanvasState = "IDLE";
@@ -422,7 +436,7 @@ canvas.addEventListener("mouseup", () => {
 addEventListener("keydown", (e) => {
     if (!activeTextBox.element) return;
 
-    textboxKeydownHandler(e.key, activeTextBox);
+    textboxKeydownHandler(e.key, activeTextBox, ctx);
 });
 
 // Cursor style
@@ -455,7 +469,7 @@ if (savedElements) {
     elements.forEach((el) => {
         if (el.tool === "image-tool" && el.data?.url) {
             promises.push(
-                refectchImages(el).then((bitmap) => {
+                refetchImages(el).then((bitmap) => {
                     el.data.bitmap = bitmap;
                 }),
             );
