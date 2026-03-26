@@ -143,14 +143,10 @@ export const textboxMouseupHandler = (el) => {
 	}
 }
 
-export const defocusTextbox = (x, y) => {
-	if (activeTextBox.element) {
-		let el = activeTextBox.element;
-
-		if (!hitTestTextbox(el, x, y)) {
+export const defocusTextbox = (el) => {
 			el.state = "typed";
 
-			let { x1, y1, x2, y2 } = getDiagonalCorners(el);
+			let { x1, y1, x2, y2 } = getBoundsTextbox(el);
 
 			ctx.font = `${y2 - y1 - 2}px Pixelify Sans`;
 			let width = ctx.measureText(el.text).width;
@@ -167,6 +163,4 @@ export const defocusTextbox = (x, y) => {
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 			render();
 			return;
-		}
-	}
 };

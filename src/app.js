@@ -33,7 +33,7 @@ import {
 import {
     renderSolidBrush,
     hitTestBrush,
-    moveBrushPoint,
+    moveBrush,
     getBoundsBrush,
 } from "./tools/solid-brush";
 
@@ -91,7 +91,7 @@ let selectedElements = [];
 let currentCanvasState = "IDLE";
 let currentTool = "NONE";
 let movement = new Map();
-let resizeHandle
+let resizeHandle = null;
 let activeTextBox = {
     element: null,
     before: "",
@@ -121,7 +121,7 @@ const renderElement = (el, ctx) => {
 
 const render = (elements, selectedElements, ctx) => {
     elements.forEach(el => {
-        renderElement(el);
+        renderElement(el, ctx);
     })
 
     selectedElements.forEach(el => {
@@ -183,7 +183,7 @@ const moveElement = (el, dx, dy) => {
     if (el.tool === "circle-tool") return moveCircle(el, dx, dy);
     if (el.tool === "triangle-tool") return moveTriangle(el, dx, dy);
 
-    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return moveBrush(el, dx, dy);
+    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return moveBrush(el, dx, dy); // moveBrush imported from solid-brush
 
     if (el.tool === "image-tool") return moveImage(el, dx, dy);
     if (el.tool === "text-tool") return moveTextbox(el, dx, dy);
@@ -230,6 +230,22 @@ const resizeElement = (el, handle, x, y) => {
     if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return;
     if (el.tool === "text-tool") return;
 }
+
+// BOUNDS DISPATCHER
+
+const getBounds = (el) => {
+    if (el.tool === "rect-tool") return getBoundsRect(el);
+    if (el.tool === "line-tool") return getBoundsLine(el);
+    if (el.tool === "circle-tool") return getBoundsCircle(el);
+    if (el.tool === "triangle-tool") return getBoundsTriangle(el);
+    if (el.tool === "image-tool") return getBoundsImage(el);
+    if (el.tool === "text-tool") return getBoundsTextbox(el);
+    if (
+        el.tool === "brush-tool" ||
+        el.tool === "dash-brush-tool" ||
+        el.tool === "dotted-brush-tool"
+    ) return getBoundsBrush(el);
+};
 
 // ELEMENT CREATION 
 
@@ -301,44 +317,24 @@ allColors.forEach((color) => {
         currentColor = getComputedStyle(e.target).backgroundColor;
     });
 });
-
 allOpacity.forEach((opacity) => {
     opacity.addEventListener("click", (e) => {
         currentOpacity = Number(e.target.dataset.opacity);
     });
 });
-
 strokeSlider.addEventListener("input", (e) => {
     currentWidth = Number(e.target.value);
 });
-
 clearBtn.addEventListener("click", () => {
     if (elements.length === 0) return;
     elements = [];
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     localStorage.setItem("scribbleElements", JSON.stringify(elements));
 });
-
-allToolInputs.forEach((input) => {
-    input.addEventListener("change", (e) => {
+allToolInputs.forEach(i => {
+    i.addEventListener("change", (e) => {
         clearSelection();
         currentTool = e.target.id;
-        if (
-            e.target.id === "brush-tool" ||
-            e.target.id === "dash-brush-tool" ||
-            e.target.id === "dotted-brush-tool"
-        ) {
-            currentToolCategory = "FREEHAND";
-        } else if (e.target.id === "selection-tool") {
-            currentToolCategory = "SELECTION";
-        } else if (e.target.id === "image-tool") {
-            currentToolCategory = "IMAGE";
-        } else if (e.target.id === "text-tool") {
-            currentToolCategory = "TEXT";
-        } else {
-            currentToolCategory = "SHAPE";
-        }
-        console.log(currentTool);
     });
 });
 
@@ -346,118 +342,30 @@ canvas.addEventListener("mousedown", (e) => {
     if (currentTool === "NONE") return;
 
     if (activeTextBox.element) {
-        let corners = getDiagonalCorners(activeTextBox.element);
-        if (
-            !isTextBoxHit(
-                corners.x1,
-                corners.y1,
-                corners.x2,
-                corners.y2,
-                e.clientX,
-                e.clientY,
-            )
-        ) {
-            activeTextBox.element.state = "typed";
-            let el = activeTextBox.element;
-            let { x1, y1, x2, y2 } = getDiagonalCorners(el);
-            ctx.font = `${y2 - y1 - 2}px Pixelify Sans`;
-            let width = ctx.measureText(el.text).width;
-            el.x2 = x1 + width;
-            activeTextBox = {
-                element: null,
-                before: "",
-                after: "",
-            };
-            ctx.font = "0px";
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            render();
-            return;
+        if (isHit(activeTextBox.element, e.clientX, e.clientY)) {
+            defocusTextbox(activeTextBox.element)
         }
     }
 
     currentCanvasState = "EDITING";
 
     if (currentTool === "selection-tool") {
-        resizingKey = "REVERT";
+        resizeHandle = null;
         if (selectedElements.length === 1) {
-            resizingKey = getResizeHandle(
-                e.clientX,
-                e.clientY,
-                getBounds(selectedElements[0]),
-            );
+            resizeHandle = getResizeHandle(e.clientX, e.clientY, getBounds(selectedElements[0]));
         }
 
-        if (!resizingKey) {
-            selectedElements = getSelectedElements(e);
-            selectedElements.forEach((el) => {
-                if (
-                    el.toolCategory === "SHAPE" ||
-                    el.toolCategory === "TEXT" ||
-                    el.toolCategory === "IMAGE"
-                ) {
-                    let offsetX = e.clientX - el.x1;
-                    let offsetY = e.clientY - el.y1;
-                    movement.set(el, { offsetX, offsetY });
-                } else if (el.toolCategory === "FREEHAND") {
-                    let offsets = [];
-                    el.points.forEach((p) => {
-                        offsets.push({ x: p.x - e.clientX, y: p.y - e.clientY });
-                    });
-                    movement.set(el, offsets);
-                }
-            });
+        if (!resizeHandle) {
+            getOffsets(selectedElements, e.clientX, e.clientY)
         }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        render();
+        render(elements, selectedElements, ctx);
         return;
-    } else if (currentToolCategory === "SHAPE") {
-        elements.push({
-            x1: e.clientX,
-            y1: e.clientY,
-            x2: e.clientX,
-            y2: e.clientY,
-            width: currentWidth,
-            color: currentColor,
-            opacity: currentOpacity,
-            tool: currentTool,
-            toolCategory: currentToolCategory,
-        });
-    } else if (currentToolCategory === "FREEHAND") {
-        elements.push({
-            x1: e.clientX,
-            y1: e.clientY,
-            points: [{ x: e.clientX, y: e.clientY }],
-            width: currentWidth,
-            color: currentColor,
-            opacity: currentOpacity,
-            tool: currentTool,
-            toolCategory: currentToolCategory,
-        });
-    } else if (currentToolCategory === "IMAGE") {
-        elements.push({
-            x1: e.clientX,
-            y1: e.clientY,
-            x2: e.clientX,
-            y2: e.clientY,
-            url: "",
-            bitmap: "",
-            state: "placeholder",
-            tool: currentTool,
-            toolCategory: currentToolCategory,
-        });
-    } else if (currentToolCategory === "TEXT") {
-        elements.push({
-            x1: e.clientX,
-            y1: e.clientY,
-            x2: e.clientX,
-            y2: e.clientY,
-            text: "",
-            color: currentColor,
-            state: "placeholder",
-            tool: currentTool,
-            toolCategory: currentToolCategory,
-        });
+
+    } else {
+        const el = createElement(e.clientX, e.clientY);
+        elements.push(el);
     }
 });
 
@@ -465,94 +373,56 @@ canvas.addEventListener("mousemove", (e) => {
     if (currentCanvasState !== "EDITING") return;
 
     if (currentTool === "selection-tool") {
-        if (resizingKey !== "REVERT") {
-            resizeElement(el, resizeHandle, e.clientX, e.clientY)
+        if (resizeHandle) {
+            resizeElement(selectedElements[0], resizeHandle, e.clientX, e.clientY);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            render();
+            render(elements, selectedElements, ctx);
             return;
         }
 
-        selectedElements.forEach((el) => {
-            if (
-                el.toolCategory === "SHAPE" ||
-                el.toolCategory === "TEXT" ||
-                el.toolCategory === "IMAGE"
-            ) {
-                let { offsetX, offsetY } = movement.get(el);
-                let dx = e.clientX - el.x1 - offsetX;
-                let dy = e.clientY - el.y1 - offsetY;
-                el.x1 += dx;
-                el.x2 += dx;
-                el.y1 += dy;
-                el.y2 += dy;
-            } else if (el.toolCategory === "FREEHAND") {
-                let offsets = movement.get(el);
-                for (let i = 0; i < el.points.length; i++) {
-                    el.points[i].x = e.clientX + offsets[i].x;
-                    el.points[i].y = e.clientY + offsets[i].y;
-                }
-            }
-        });
+        move(selectedElements, e.clientX, e.clientY);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        render();
+        render(elements, selectedElements, ctx);
         return;
     }
 
     let el = elements[elements.length - 1];
-    if (currentToolCategory === "SHAPE") {
-        el.x2 = e.clientX;
-        el.y2 = e.clientY;
-    } else if (currentToolCategory === "FREEHAND") {
-        el.points.push({ x: e.clientX, y: e.clientY });
-    } else if (currentToolCategory === "IMAGE") {
-        el.x2 = e.clientX;
-        el.y2 = e.clientY;
-    } else if (currentToolCategory === "TEXT") {
-        el.x2 = e.clientX;
-        el.y2 = e.clientY;
-        // let { x1, y1, x2, y2 } = getDiagonalCorners(x1, y1, clientX, clientY)
-        // el.x1 = x1
-        // el.x2 = x2
-        // el.y1 = y1
-        // el.y2 = y2
-    }
 
+    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") {
+        el.points.push({ x: e.clientX, y: e.clientY });
+    } else {
+        el.x2 = e.clientX;
+        el.y2 = e.clientY;
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    render();
+    render(elements, selectedElements, ctx);
 });
 
 canvas.addEventListener("mouseup", () => {
-    if (currentTool === "selection-tool") { // ← ADD THIS
+    if (currentTool === "selection-tool") {
         currentCanvasState = "IDLE";
-        resizingKey = "REVERT";
+        resizeHandle = null;
         movement.clear();
         return;
     }
 
     let el = elements[elements.length - 1];
     if (el.tool === "image-tool") {
-        el.state = "image";
-        let url = `https://picsum.photos/${Math.abs(el.x2 - el.x1)}/${Math.abs(el.y2 - el.y1)}`;
-        el.url = url;
-
-        loadImage(el.url).then((bitmap) => {
-            el.bitmap = bitmap;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            render();
-        });
+        fetchImage(el);
     } else if (el.tool === "text-tool" && el.state === "placeholder") {
-        el.state = "typing";
-        activeTextBox = {
-            element: el,
-            before: el.text,
-            after: "",
-        };
+        textboxMouseupHandler(el)
     }
 
     currentCanvasState = "IDLE";
-    resizingKey = "REVERT";
+    resizeHandle = null;
     movement.clear();
     localStorage.setItem("scribbleElements", JSON.stringify(elements));
+});
+
+addEventListener("keydown", (e) => {
+    if (!activeTextBox.element) return;
+
+    textboxKeydownHandler(e.key, activeTextBox);
 });
 
 // Cursor style
@@ -570,40 +440,7 @@ canvas.addEventListener("mousemove", (e) => {
         e.clientY,
         getBounds(selectedElements[0]),
     );
-    canvas.style.cursor = handle !== "REVERT" ? "nwse-resize" : "move";
-});
-
-addEventListener("keydown", (e) => {
-    if (!activeTextBox.element) return;
-    let before = activeTextBox.before;
-    let after = activeTextBox.after;
-
-    let maxWidth = Math.abs(activeTextBox.element.x2 - activeTextBox.element.x1);
-
-    if (e.key.length === 1) {
-        let newText = activeTextBox.element.text + e.key;
-        ctx.font = `${activeTextBox.element.y2 - activeTextBox.element.y1 - 2}px Pixelify Sans`;
-        let width = ctx.measureText(newText).width;
-        if (width <= maxWidth) {
-            before = before + e.key;
-        }
-    } else if (e.key === "Backspace") {
-        before = before.slice(0, before.length - 1);
-    } else if (e.key === "ArrowRight") {
-        before = before + after.slice(0, 1);
-        after = after.slice(1);
-    } else if (e.key === "ArrowLeft") {
-        after = before.slice(before.length - 1) + after;
-        before = before.slice(0, before.length - 1);
-    }
-
-    activeTextBox.element.text = before + after;
-
-    activeTextBox.before = before;
-    activeTextBox.after = after;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    render();
+    canvas.style.cursor = handle && handle !== "REVERT" ? "nwse-resize" : "move";
 });
 
 // INITAL LOADING FROM LOCAL STORAGE
@@ -616,16 +453,16 @@ if (savedElements) {
     let promises = [];
 
     elements.forEach((el) => {
-        if (el.toolCategory === "IMAGE" && el.url) {
+        if (el.tool === "image-tool" && el.data?.url) {
             promises.push(
-                loadImage(el.url).then((bitmap) => {
-                    el.bitmap = bitmap;
+                refectchImages(el).then((bitmap) => {
+                    el.data.bitmap = bitmap;
                 }),
             );
         }
     });
 
-    Promise.all(promises).then(() => render());
+    Promise.all(promises).then(() => render(elements, selectedElements, ctx));
 }
 
 const clearSelection = () => {
@@ -641,5 +478,6 @@ const clearSelection = () => {
     selectedElements = [];
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    render();
-};
+    render(elements, selectedElements, ctx);
+}
+
