@@ -281,6 +281,7 @@ clearBtn.addEventListener("click", () => {
 
 allToolInputs.forEach((input) => {
     input.addEventListener("change", (e) => {
+        clearSelection()
         currentTool = e.target.id;
         if (
             e.target.id === "brush-tool" ||
@@ -573,4 +574,20 @@ if (savedElements) {
     });
 
     Promise.all(promises).then(() => render());
+}
+
+const clearSelection = () => {
+    if (activeTextBox.element) {
+        activeTextBox.element.state = "typed"
+        activeTextBox = {
+            element: null,
+            before: "",
+            after: "",
+        }
+    }
+
+    selectedElements = []
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    render();
 }
