@@ -38,7 +38,7 @@ export const getBoundsCircle = (el) => {
   return {
     x1: el.x1 - r,
     y1: el.y1 - r,
-    x2: el.x1 + 2 * r,
-    y2: el.y1 + 2 * r,
+    x2: el.x1 + r,
+    y2: el.y1 + r,
   };
 }

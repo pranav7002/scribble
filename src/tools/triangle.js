@@ -2,7 +2,7 @@ import { area } from "../utils.js";
 import { resizeRect } from "./rect.js";
 
 export const hitTestTriangle = (el, x, y) => {
-  let { x1, y1, x2, y2 } = el
+  let { x1, y1, x2, y2 } = getBoundsTriangle(el)
 
   let x3 = (x1 + x2) / 2;
   let y3 = y2;

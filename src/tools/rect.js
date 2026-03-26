@@ -1,5 +1,6 @@
 export const hitTestRect = (el, x, y) => {
-	if (x >= el.x1 && x <= el.x2 && y >= el.y1 && y <= el.y2) {
+	let { x1, y1, x2, y2 } = getBoundsRect(el)
+	if (x >= x1 && x <= x2 && y >= y1 && y <= y2) {
 		return true
 	}
 	return false
@@ -24,10 +25,10 @@ export const moveRect = (el, dx, dy) => {
 }
 
 export const resizeRect = (el, handle, x, y) => {
-  if (handle === "tl") { el.x1 = x; el.y1 = y; }
-  if (handle === "tr") { el.x2 = x; el.y1 = y; }
-  if (handle === "bl") { el.x1 = x; el.y2 = y; }
-  if (handle === "br") { el.x2 = x; el.y2 = y; }
+	if (handle === "tl") { el.x1 = x; el.y1 = y; }
+	if (handle === "tr") { el.x2 = x; el.y1 = y; }
+	if (handle === "bl") { el.x1 = x; el.y2 = y; }
+	if (handle === "br") { el.x2 = x; el.y2 = y; }
 }
 
 export const getBoundsRect = (el) => {

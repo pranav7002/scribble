@@ -132,6 +132,9 @@ const render = (elements, selectedElements, ctx) => {
             handleSize: 8,
         })
     });
+
+    ctx.restore()
+    ctx.font = "0px"
 }
 
 // SIZE CANVAS TO MATCH CSS DISPLAY SIZE
@@ -243,7 +246,7 @@ const resizeElement = (el, handle, x, y) => {
 
 // BOUNDS
 
-export const getBounds = (el) => {
+const getBounds = (el) => {
     if (el.tool === "rect-tool") return getBoundsRect(el);
     if (el.tool === "line-tool") return getBoundsLine(el);
     if (el.tool === "circle-tool") return getBoundsCircle(el);
@@ -308,6 +311,7 @@ const createElement = (x, y) => {
         return {
             x1: x, y1: y, x2: x, y2: y,
             tool: currentTool,
+            state: "placeholder",
             style: {
                 color: currentColor,
                 opacity: currentOpacity,
@@ -357,26 +361,32 @@ canvas.addEventListener("mousedown", (e) => {
     if (activeTextBox.element) {
         if (!isHit(activeTextBox.element, e.clientX, e.clientY)) {
             activeTextBox = defocusTextbox(activeTextBox.element, ctx, activeTextBox);
+
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            render(elements, selectedElements, ctx)
+            return
         }
     }
 
     currentCanvasState = "EDITING";
 
     if (currentTool === "selection-tool") {
-        selectedElements = getSelectedElements(elements, e.clientX, e.clientY);
         resizeHandle = null;
         if (selectedElements.length === 1) {
             resizeHandle = getResizeHandle(e.clientX, e.clientY, getBounds(selectedElements[0]));
         }
-
-        if (!resizeHandle) {
-            getOffsets(selectedElements, e.clientX, e.clientY)
+        if (resizeHandle) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            render(elements, selectedElements, ctx);
+            console.log(resizeHandle)
+            return;
+        } else if (!resizeHandle) {
+            selectedElements = getSelectedElements(elements, e.clientX, e.clientY);
+            getOffsets(selectedElements, e.clientX, e.clientY);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            render(elements, selectedElements, ctx);
+            return;
         }
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        render(elements, selectedElements, ctx);
-        return;
-
     } else {
         const el = createElement(e.clientX, e.clientY);
         elements.push(el);
@@ -424,7 +434,7 @@ canvas.addEventListener("mouseup", () => {
     if (el.tool === "image-tool") {
         fetchImage(el);
     } else if (el.tool === "text-tool" && el.state === "placeholder") {
-        activeTextBox = textboxMouseupHandler(el, activeTextBox)
+        activeTextBox = textboxMouseupHandler(el)
     }
 
     currentCanvasState = "IDLE";
@@ -437,6 +447,9 @@ addEventListener("keydown", (e) => {
     if (!activeTextBox.element) return;
 
     textboxKeydownHandler(e.key, activeTextBox, ctx);
+
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    render(elements, selectedElements, ctx);
 });
 
 // Cursor style

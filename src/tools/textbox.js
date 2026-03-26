@@ -126,23 +126,18 @@ export const textboxKeydownHandler = (key, activeTextBox, ctx) => {
 
 	activeTextBox.before = before;
 	activeTextBox.after = after;
-
-	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 };
 
-export const textboxMouseupHandler = (el, activeTextBox) => {
-	if (el.state === "placeholder") {
-		el.state = "typing";
-		return {
-			element: el,
-			before: el.data.text,
-			after: "",
-		};
-	}
-	return activeTextBox;
+export const textboxMouseupHandler = (el) => {
+	el.state = "typing";
+	return {
+		element: el,
+		before: el.data.text,
+		after: "",
+	};
 }
 
-export const defocusTextbox = (el, ctx, activeTextBox) => {
+export const defocusTextbox = (el, ctx) => {
 	el.state = "typed";
 
 	let { x1, y1, x2, y2 } = getBoundsTextbox(el);
@@ -153,7 +148,6 @@ export const defocusTextbox = (el, ctx, activeTextBox) => {
 	el.x2 = x1 + width;
 
 	ctx.font = "0px";
-	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 	return {
 		element: null,
 		before: "",
