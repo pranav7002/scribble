@@ -18,7 +18,7 @@ export const getDiagonalCorners = ({ x1, y1, x2, y2 }) => {
     };
 };
 
-export const getResizeHandle = (clientX, clientY, bounds) => {
+export const getResizeHandle = (x, y, bounds) => {
     const { x1, y1, width, height } = bounds;
     const size = 15;
 
@@ -31,12 +31,12 @@ export const getResizeHandle = (clientX, clientY, bounds) => {
 
     for (let key in handles) {
         let [x, y] = handles[key];
-        if (Math.abs(clientX - x) < size && Math.abs(clientY - y) < size) {
+        if (Math.abs(x - x) < size && Math.abs(y - y) < size) {
             return key;
         }
     }
 
-    return "REVERT";
+    return;
 };
 
 export const loadImage = async (url) => {

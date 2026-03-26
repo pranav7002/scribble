@@ -1,76 +1,76 @@
 import {
-	renderRect,
-	hitTestRect,
-	moveRect,
-	resizeRect,
-	getBoundsRect,
+    renderRect,
+    hitTestRect,
+    moveRect,
+    resizeRect,
+    getBoundsRect,
 } from "./tools/rect";
 
 import {
-	renderLine,
-	hitTestLine,
-	moveLine,
-	resizeLine,
-	getBoundsLine,
+    renderLine,
+    hitTestLine,
+    moveLine,
+    resizeLine,
+    getBoundsLine,
 } from "./tools/line";
 
 import {
-	renderCircle,
-	hitTestCircle,
-	moveCircle,
-	resizeCircle,
-	getBoundsCircle,
+    renderCircle,
+    hitTestCircle,
+    moveCircle,
+    resizeCircle,
+    getBoundsCircle,
 } from "./tools/circle";
 
 import {
-	renderTriangle,
-	hitTestTriangle,
-	moveTriangle,
-	resizeTriangle,
-	getBoundsTriangle,
+    renderTriangle,
+    hitTestTriangle,
+    moveTriangle,
+    resizeTriangle,
+    getBoundsTriangle,
 } from "./tools/triangle";
 
 import {
-	renderSolidBrush,
-	hitTestBrush,
-	moveBrush,
-	getBoundsBrush,
+    renderSolidBrush,
+    hitTestBrush,
+    moveBrushPoint,
+    getBoundsBrush,
 } from "./tools/solid-brush";
 
 import {
-	renderDashedBrush,
+    renderDashedBrush,
 } from "./tools/dashed-brush";
 
 import {
-	renderDottedBrush,
+    renderDottedBrush,
 } from "./tools/dotted-brush";
 
 import {
-	renderImage,
-	hitTestImage,
-	moveImage,
-	resizeImage,
-	getBoundsImage,
-	fetchImage,
-	refectchImages,
+    renderImage,
+    hitTestImage,
+    moveImage,
+    resizeImage,
+    getBoundsImage,
+    fetchImage,
+    refectchImages,
 } from "./tools/image";
 
 import {
-	renderTextbox,
-	hitTestTextbox,
-	moveTextbox,
-	resizeTextbox,
-	getBoundsTextbox,
-	textboxKeydownHandler,
-	textboxMouseupHandler,
-	defocusTextbox,
+    renderTextbox,
+    hitTestTextbox,
+    moveTextbox,
+    resizeTextbox,
+    getBoundsTextbox,
+    textboxKeydownHandler,
+    textboxMouseupHandler,
+    defocusTextbox,
 } from "./tools/textbox";
 
 import {
-	renderSelectionUI,
+    renderSelectionUI,
     getResizeHandle,
     dist,
-	area,
+    area,
 } from "./utils";
 
 //CONSTANTS
@@ -91,6 +91,7 @@ let selectedElements = [];
 let currentCanvasState = "IDLE";
 let currentTool = "NONE";
 let movement = new Map();
+let resizeHandle
 let activeTextBox = {
     element: null,
     before: "",
@@ -125,11 +126,11 @@ const render = (elements, selectedElements, ctx) => {
 
     selectedElements.forEach(el => {
         renderSelectionUI(el, ctx, {
-			showHandles: true,
-			color: "rgb(12, 142, 244)",
-			padding: 6,
-			handleSize: 8,
-		})
+            showHandles: true,
+            color: "rgb(12, 142, 244)",
+            padding: 6,
+            handleSize: 8,
+        })
     });
 }
 
@@ -154,11 +155,144 @@ const getSelectedElements = (elements, x, y) => {
     elements.forEach(el => {
         if (isHit(el, x, y)) selected.push(el)
     })
-    
+
     return selected
 };
 
 //MOVEMENT
+
+const getOffsets = (selectedElements, x, y) => {
+    selectedElements.forEach(el => {
+        if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") {
+            let offsets = [];
+            el.points.forEach((p) => {
+                offsets.push({ x: p.x - x, y: p.y - y });
+            });
+            movement.set(el, offsets);
+        } else {
+            let offsetX = x - el.x1;
+            let offsetY = y - el.y1;
+            movement.set(el, { offsetX, offsetY });
+        }
+    })
+}
+
+const moveElement = (el, dx, dy) => {
+    if (el.tool === "rect-tool") return moveRect(el, dx, dy);
+    if (el.tool === "line-tool") return moveLine(el, dx, dy);
+    if (el.tool === "circle-tool") return moveCircle(el, dx, dy);
+    if (el.tool === "triangle-tool") return moveTriangle(el, dx, dy);
+
+    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return moveBrush(el, dx, dy);
+
+    if (el.tool === "image-tool") return moveImage(el, dx, dy);
+    if (el.tool === "text-tool") return moveTextbox(el, dx, dy);
+};
+
+const move = (selectedElements, x, y) => {
+    selectedElements.forEach(el => {
+        const data = movement.get(el);
+
+        if (
+            el.tool === "brush-tool" ||
+            el.tool === "dash-brush-tool" ||
+            el.tool === "dotted-brush-tool"
+        ) {
+            // using first point as reference
+            const first = el.points[0];
+            const offset = data[0];
+
+            const dx = x + offset.x - first.x;
+            const dy = y + offset.y - first.y;
+
+            moveBrush(el, dx, dy);
+
+        } else {
+            const { offsetX, offsetY } = data;
+
+            const dx = x - offsetX - el.x1;
+            const dy = y - offsetY - el.y1;
+
+            moveElement(el, dx, dy);
+        }
+    });
+};
+
+// RESIZE
+
+const resizeElement = (el, handle, x, y) => {
+    if (el.tool === "rect-tool") return resizeRect(el, handle, x, y);
+    if (el.tool === "line-tool") return resizeLine(el, handle, x, y);
+    if (el.tool === "circle-tool") return resizeCircle(el, handle, x, y);
+    if (el.tool === "triangle-tool") return resizeTriangle(el, handle, x, y);
+    if (el.tool === "image-tool") return resizeImage(el, handle, x, y);
+
+    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return;
+    if (el.tool === "text-tool") return;
+}
+
+// ELEMENT CREATION 
+
+const createElement = (x, y) => {
+    const baseStyle = {
+        color: currentColor,
+        opacity: currentOpacity,
+        fill: null,
+        width: currentWidth
+    };
+
+    if (
+        currentTool === "rect-tool" ||
+        currentTool === "line-tool" ||
+        currentTool === "circle-tool" ||
+        currentTool === "triangle-tool"
+    ) {
+        return {
+            x1: x, y1: y, x2: x, y2: y,
+            style: baseStyle,
+            tool: currentTool,
+        };
+    }
+
+    if (
+        currentTool === "brush-tool" ||
+        currentTool === "dash-brush-tool" ||
+        currentTool === "dotted-brush-tool"
+    ) {
+        return {
+            points: [{ x, y }],
+            style: baseStyle,
+            tool: currentTool
+        };
+    }
+
+    if (currentTool === "image-tool") {
+        return {
+            x1: x, y1: y, x2: x, y2: y,
+            tool: currentTool,
+            state: "placeholder",
+            data: {
+                url: "",
+                bitmap: null,
+            }
+        };
+    }
+
+    if (currentTool === "text-tool") {
+        return {
+            x1: x, y1: y, x2: x, y2: y,
+            tool: currentTool,
+            style: {
+                color: currentColor,
+                opacity: currentOpacity,
+            },
+            state: "placeholder",
+        };
+    }
+
+    return null;
+}
+
 
 // EVENTS
 
@@ -253,7 +387,7 @@ canvas.addEventListener("mousedown", (e) => {
             );
         }
 
-        if (resizingKey === "REVERT") {
+        if (!resizingKey) {
             selectedElements = getSelectedElements(e);
             selectedElements.forEach((el) => {
                 if (
@@ -332,25 +466,7 @@ canvas.addEventListener("mousemove", (e) => {
 
     if (currentTool === "selection-tool") {
         if (resizingKey !== "REVERT") {
-            let el = selectedElements[0];
-            if (el.toolCategory === "SHAPE") {
-                if (resizingKey === "tl") {
-                    el.x1 = e.clientX;
-                    el.y1 = e.clientY;
-                }
-                if (resizingKey === "tr") {
-                    el.x2 = e.clientX;
-                    el.y1 = e.clientY;
-                }
-                if (resizingKey === "bl") {
-                    el.x1 = e.clientX;
-                    el.y2 = e.clientY;
-                }
-                if (resizingKey === "br") {
-                    el.x2 = e.clientX;
-                    el.y2 = e.clientY;
-                }
-            }
+            resizeElement(el, resizeHandle, e.clientX, e.clientY)
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render();
             return;
