@@ -5,7 +5,7 @@ import {
     allColors,
     allOpacity,
     strokeSlider,
-    clearBtn
+    clearBtn,
 } from "./constants.js";
 
 import {
@@ -15,7 +15,7 @@ import {
     getBounds,
     renderSelectionOutline,
     getResizeHandle,
-    loadImage
+    loadImage,
 } from "./utils.js";
 
 // MUTABLE STATE VARIABLES
@@ -30,6 +30,11 @@ let movement = new Map();
 let currentColor = "#0C8EF4";
 let currentWidth = 15;
 let currentOpacity = 0.6;
+let activeTextBox = {
+    element: null,
+    before: "",
+    after: "",
+};
 
 // RENDER
 
@@ -80,7 +85,7 @@ const render = () => {
                 ctx.stroke();
             }
             if (element.tool === "dash-brush-tool") {
-                ctx.setLineDash([10, 15]);
+                ctx.setLineDash([10, 20]);
                 ctx.beginPath();
                 let { x, y } = element.points[0];
                 ctx.moveTo(x, y);
@@ -91,7 +96,7 @@ const render = () => {
                 ctx.stroke();
             }
             if (element.tool === "dotted-brush-tool") {
-                ctx.setLineDash([0.5, 10]);
+                ctx.setLineDash([0.5, 18]);
                 ctx.beginPath();
                 let { x, y } = element.points[0];
                 ctx.moveTo(x, y);
@@ -105,16 +110,96 @@ const render = () => {
             let { x1, y1, x2, y2, state } = element;
             let width = Math.abs(x2 - x1);
             let height = Math.abs(y2 - y1);
-            console.log(width, height)
+            console.log(width, height);
 
             if (state === "image") {
-                ctx.drawImage(element.bitmap, x1, y1, width, height)
-            }
-            else if (state === "placeholder") {
-                ctx.setLineDash([6, 15]);
-                ctx.lineWidth = 2;
+                ctx.drawImage(element.bitmap, x1, y1, width, height);
+            } else if (state === "placeholder") {
+                let corners = [
+                    { x: x1, y: y1 },
+                    { x: x2, y: y2 },
+                    { x: x1, y: y2 },
+                    { x: x2, y: y1 },
+                ];
+                corners.forEach((c) => {
+                    let side = 6;
+                    let x = c.x - 3;
+                    let y = c.y - 3;
+
+                    ctx.save();
+                    ctx.fillStyle = "#000000";
+                    ctx.fillRect(x, y, side, side);
+                    ctx.restore();
+                });
+
+                ctx.setLineDash([4, 8]);
+                ctx.lineWidth = 1.5;
                 ctx.strokeStyle = "#000000";
                 ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+            }
+        } else if (element.toolCategory === "TEXT") {
+            let { x1, y1, x2, y2, state } = element;
+            if (state === "placeholder") {
+                let corners = [
+                    { x: x1, y: y1 },
+                    { x: x2, y: y2 },
+                    { x: x1, y: y2 },
+                    { x: x2, y: y1 },
+                ];
+                corners.forEach((c) => {
+                    let side = 6;
+                    let x = c.x - 3;
+                    let y = c.y - 3;
+
+                    ctx.save();
+                    ctx.fillStyle = "#000000";
+                    ctx.fillRect(x, y, side, side);
+                    ctx.restore();
+                });
+
+                ctx.setLineDash([4, 8]);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = "rgb(12, 142, 244)";
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                ({ x1, y1, x2, y2 } = getDiagonalCorners(element));
+                let height = y2 - y1;
+                ctx.font = `${height - 2}px Pixelify Sans`;
+                ctx.fillText("|", x1, y2);
+            } else if (state === "typing") {
+                let before = activeTextBox.before;
+                let after = activeTextBox.after;
+
+                let corners = [
+                    { x: x1, y: y1 },
+                    { x: x2, y: y2 },
+                    { x: x1, y: y2 },
+                    { x: x2, y: y1 },
+                ];
+                corners.forEach((c) => {
+                    let side = 6;
+                    let x = c.x - 3;
+                    let y = c.y - 3;
+
+                    ctx.save();
+                    ctx.fillStyle = "#000000";
+                    ctx.fillRect(x, y, side, side);
+                    ctx.restore();
+                });
+
+                ctx.setLineDash([4, 8]);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = "#000000";
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                ({ x1, y1, x2, y2 } = getDiagonalCorners(element));
+                let height = y2 - y1;
+                ctx.font = `${height - 2}px Pixelify Sans`;
+                ctx.fillText(before, x1, y2);
+                let offset = ctx.measureText(before).width;
+                ctx.fillStyle = "rgb(12, 142, 244)";
+                ctx.fillText("|", x1 + offset, y2);
+                ctx.fillStyle = "#000000";
+                offset = ctx.measureText(before + "|").width;
+                ctx.fillText(after, x1 + offset, y2);
             }
         }
         ctx.restore();
@@ -179,7 +264,6 @@ const getSelectedElements = ({ clientX, clientY }) => {
     return selected;
 };
 
-
 // EVENTS
 
 allColors.forEach((color) => {
@@ -218,6 +302,8 @@ allToolInputs.forEach((input) => {
             currentToolCategory = "SELECTION";
         } else if (e.target.id === "image-tool") {
             currentToolCategory = "IMAGE";
+        } else if (e.target.id === "text-tool") {
+            currentToolCategory = "TEXT";
         } else {
             currentToolCategory = "SHAPE";
         }
@@ -294,6 +380,17 @@ canvas.addEventListener("mousedown", (e) => {
             tool: currentTool,
             toolCategory: currentToolCategory,
         });
+    } else if (currentToolCategory === "TEXT") {
+        elements.push({
+            x1: e.clientX,
+            y1: e.clientY,
+            x2: e.clientX,
+            y2: e.clientY,
+            text: "",
+            state: "placeholder",
+            tool: currentTool,
+            toolCategory: currentToolCategory,
+        });
     }
 });
 
@@ -357,6 +454,14 @@ canvas.addEventListener("mousemove", (e) => {
     } else if (currentToolCategory === "IMAGE") {
         el.x2 = e.clientX;
         el.y2 = e.clientY;
+    } else if (currentToolCategory === "TEXT") {
+        el.x2 = e.clientX;
+        el.y2 = e.clientY;
+        // let { x1, y1, x2, y2 } = getDiagonalCorners(x1, y1, clientX, clientY)
+        // el.x1 = x1
+        // el.x2 = x2
+        // el.y1 = y1
+        // el.y2 = y2
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -366,16 +471,22 @@ canvas.addEventListener("mousemove", (e) => {
 canvas.addEventListener("mouseup", () => {
     let el = elements[elements.length - 1];
     if (el.tool === "image-tool") {
-
-        el.state = "image"
-        let url = `https://picsum.photos/${Math.abs(el.x2 - el.x1)}/${Math.abs(el.y2 - el.y1)}/`
-        el.url = url
+        el.state = "image";
+        let url = `https://picsum.photos/${Math.abs(el.x2 - el.x1)}/${Math.abs(el.y2 - el.y1)}`;
+        el.url = url;
 
         loadImage(el.url).then((bitmap) => {
             el.bitmap = bitmap;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render();
         });
+    } else if (el.tool === "text-tool") {
+        el.state = "typing";
+        activeTextBox = {
+            element: el,
+            before: el.text,
+            after: "",
+        };
     }
 
     currentCanvasState = "IDLE";
@@ -402,6 +513,39 @@ canvas.addEventListener("mousemove", (e) => {
     canvas.style.cursor = handle !== "REVERT" ? "nwse-resize" : "move";
 });
 
+addEventListener("keydown", (e) => {
+    if (!activeTextBox.element) return;
+    let before = activeTextBox.before;
+    let after = activeTextBox.after;
+
+    let maxWidth = Math.abs(activeTextBox.element.x2 - activeTextBox.element.x1);
+
+    if (e.key.length === 1) {
+        let newText = activeTextBox.element.text + e.key;
+        ctx.font = `${(activeTextBox.element.y2 - activeTextBox.element.y1) - 2}px Pixelify Sans`
+        let width = ctx.measureText(newText).width;
+        if (width <= maxWidth) {
+            before = before + e.key;
+        }
+    } else if (e.key === "Backspace") {
+        before = before.slice(0, before.length - 1);
+    } else if (e.key === "ArrowRight") {
+        before = before + after.slice(0, 1);
+        after = after.slice(1);
+    } else if (e.key === "ArrowLeft") {
+        after = before.slice(before.length - 1) + after;
+        before = before.slice(0, before.length - 1);
+    }
+
+    activeTextBox.element.text = before + after;
+
+    activeTextBox.before = before;
+    activeTextBox.after = after;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    render();
+});
+
 // INITAL LOADING FROM LOCAL STORAGE
 
 const savedElements = localStorage.getItem("scribbleElements");
@@ -414,14 +558,12 @@ if (savedElements) {
     elements.forEach((el) => {
         if (el.toolCategory === "IMAGE" && el.url) {
             promises.push(
-                loadImage(el.url).then(bitmap => {
+                loadImage(el.url).then((bitmap) => {
                     el.bitmap = bitmap;
-                })
+                }),
             );
         }
     });
 
     Promise.all(promises).then(() => render());
 }
-
-

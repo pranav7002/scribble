@@ -42,6 +42,8 @@
   min-height: 2.5rem;
 
   border-radius: 0.3rem;
+  background: transparent;
+  cursor: pointer;
 }
 
 .tool-btn svg {

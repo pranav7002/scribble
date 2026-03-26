@@ -69,7 +69,7 @@ export const renderSelectionOutline = (x1, y1, width, height) => {
     let corners = [{ x: x1, y: y1 }, { x: x2, y: y2 }, { x: x1, y: y2 }, { x: x2, y: y1 }]
 
     ctx.save();
-    ctx.strokeStyle = "#0000FF";
+    ctx.strokeStyle = "rgb(12, 142, 244)";
     ctx.setLineDash([10, 15]);
     ctx.strokeRect(x1, y1, width, height);
     ctx.strokeStyle = "#000000";
@@ -81,7 +81,7 @@ export const renderSelectionOutline = (x1, y1, width, height) => {
         let y = c.y - 4
 
         ctx.save();
-        ctx.fillStyle = "#0000FF";
+        ctx.fillStyle = "rgb(12, 142, 244)";
         ctx.fillRect(x, y, side, side)
         ctx.restore()
     })
@@ -89,7 +89,7 @@ export const renderSelectionOutline = (x1, y1, width, height) => {
 
 export const getResizeHandle = (clientX, clientY, bounds) => {
     const { x1, y1, width, height } = bounds;
-    const size = 8;
+    const size = 15;
 
     const handles = {
         tl: [x1, y1],
