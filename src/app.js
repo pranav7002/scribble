@@ -16,7 +16,7 @@ import {
     renderSelectionOutline,
     getResizeHandle,
     loadImage,
-    isTextBoxHit
+    isTextBoxHit,
 } from "./utils.js";
 
 // MUTABLE STATE VARIABLES
@@ -164,7 +164,7 @@ const render = () => {
                 ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
                 ({ x1, y1, x2, y2 } = getDiagonalCorners(element));
                 let height = y2 - y1;
-                ctx.fillStyle = "rgb(12, 142, 244)"
+                ctx.fillStyle = "rgb(12, 142, 244)";
                 ctx.font = `${height - 2}px Pixelify Sans`;
                 ctx.fillText("|", x1, y2);
             } else if (state === "typing") {
@@ -178,17 +178,19 @@ const render = () => {
                 ({ x1, y1, x2, y2 } = getDiagonalCorners(element));
                 let height = y2 - y1;
                 ctx.font = `${height - 2}px Pixelify Sans`;
+                ctx.fillStyle = element.color;
                 ctx.fillText(before, x1, y2);
                 let offset = ctx.measureText(before).width;
                 ctx.fillStyle = "rgb(12, 142, 244)";
                 ctx.fillText("|", x1 + offset, y2);
-                ctx.fillStyle = "#000000";
+                ctx.fillStyle = element.color;
                 offset = ctx.measureText(before + "|").width;
                 ctx.fillText(after, x1 + offset, y2);
             } else if (state === "typed") {
                 ({ x1, y1, x2, y2 } = getDiagonalCorners(element));
                 let height = y2 - y1;
                 ctx.font = `${height - 2}px Pixelify Sans`;
+                ctx.fillStyle = element.color;
                 ctx.fillText(element.text, x1, y2);
             }
         }
@@ -235,8 +237,7 @@ const getSelectedElements = ({ clientX, clientY }) => {
                 let A3 = area(x1, y1, x2, y1, clientX, clientY);
                 if (Math.abs(A - (A1 + A2 + A3)) < 0.1) selected.push(el);
             }
-        }
-        if (el.toolCategory === "FREEHAND") {
+        } else if (el.toolCategory === "FREEHAND") {
             for (let i = 0; i < el.points.length - 1; i++) {
                 let p1 = el.points[i];
                 let p2 = el.points[i + 1];
@@ -247,6 +248,11 @@ const getSelectedElements = ({ clientX, clientY }) => {
                     selected.push(el);
                     break;
                 }
+            }
+        } else if (el.toolCategory === "IMAGE" || el.toolCategory === "TEXT") {
+            let { x1, y1, x2, y2 } = getDiagonalCorners(el);
+            if (clientX >= x1 && clientX <= x2 && clientY >= y1 && clientY <= y2) {
+                selected.push(el);
             }
         }
     });
@@ -281,7 +287,7 @@ clearBtn.addEventListener("click", () => {
 
 allToolInputs.forEach((input) => {
     input.addEventListener("change", (e) => {
-        clearSelection()
+        clearSelection();
         currentTool = e.target.id;
         if (
             e.target.id === "brush-tool" ||
@@ -307,17 +313,28 @@ canvas.addEventListener("mousedown", (e) => {
 
     if (activeTextBox.element) {
         let corners = getDiagonalCorners(activeTextBox.element);
-        if (!isTextBoxHit(corners.x1, corners.y1, corners.x2, corners.y2, e.clientX, e.clientY)) {
-            activeTextBox.element.state = "typed"
+        if (
+            !isTextBoxHit(
+                corners.x1,
+                corners.y1,
+                corners.x2,
+                corners.y2,
+                e.clientX,
+                e.clientY,
+            )
+        ) {
+            activeTextBox.element.state = "typed";
+            let width = ctx.measureText(activeTextBox.element.text).width
+            activeTextBox.element.x2 = activeTextBox.element.x1 + width
             activeTextBox = {
                 element: null,
                 before: "",
                 after: "",
             };
-            ctx.font = "0px "
+            ctx.font = "0px";
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render();
-            return
+            return;
         }
     }
 
@@ -336,7 +353,11 @@ canvas.addEventListener("mousedown", (e) => {
         if (resizingKey === "REVERT") {
             selectedElements = getSelectedElements(e);
             selectedElements.forEach((el) => {
-                if (el.toolCategory === "SHAPE") {
+                if (
+                    el.toolCategory === "SHAPE" ||
+                    el.toolCategory === "TEXT" ||
+                    el.toolCategory === "IMAGE"
+                ) {
                     let offsetX = e.clientX - el.x1;
                     let offsetY = e.clientY - el.y1;
                     movement.set(el, { offsetX, offsetY });
@@ -395,6 +416,7 @@ canvas.addEventListener("mousedown", (e) => {
             x2: e.clientX,
             y2: e.clientY,
             text: "",
+            color: currentColor,
             state: "placeholder",
             tool: currentTool,
             toolCategory: currentToolCategory,
@@ -432,7 +454,11 @@ canvas.addEventListener("mousemove", (e) => {
         }
 
         selectedElements.forEach((el) => {
-            if (el.toolCategory === "SHAPE") {
+            if (
+                el.toolCategory === "SHAPE" ||
+                el.tool === "text-tool" ||
+                el.tool === "image-tool"
+            ) {
                 let { offsetX, offsetY } = movement.get(el);
                 let dx = e.clientX - el.x1 - offsetX;
                 let dy = e.clientY - el.y1 - offsetY;
@@ -477,6 +503,13 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 canvas.addEventListener("mouseup", () => {
+    if (currentTool === "selection-tool") { // ← ADD THIS
+        currentCanvasState = "IDLE";
+        resizingKey = "REVERT";
+        movement.clear();
+        return;
+    }
+
     let el = elements[elements.length - 1];
     if (el.tool === "image-tool") {
         el.state = "image";
@@ -530,7 +563,7 @@ addEventListener("keydown", (e) => {
 
     if (e.key.length === 1) {
         let newText = activeTextBox.element.text + e.key;
-        ctx.font = `${(activeTextBox.element.y2 - activeTextBox.element.y1) - 2}px Pixelify Sans`
+        ctx.font = `${activeTextBox.element.y2 - activeTextBox.element.y1 - 2}px Pixelify Sans`;
         let width = ctx.measureText(newText).width;
         if (width <= maxWidth) {
             before = before + e.key;
@@ -578,16 +611,16 @@ if (savedElements) {
 
 const clearSelection = () => {
     if (activeTextBox.element) {
-        activeTextBox.element.state = "typed"
+        activeTextBox.element.state = "typed";
         activeTextBox = {
             element: null,
             before: "",
             after: "",
-        }
+        };
     }
 
-    selectedElements = []
+    selectedElements = [];
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     render();
-}
+};

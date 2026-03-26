@@ -60,6 +60,11 @@ export const getBounds = (element) => {
 
         return { x1: minX, y1: minY, width: maxX - minX, height: maxY - minY };
     }
+    
+    if (element.tool === "text-tool" || element.tool === "image-tool") {
+        return { x1, y1, width: x2 - x1, height: y2 - y1 };
+    }
+
 };
 
 export const renderSelectionOutline = (x1, y1, width, height) => {
