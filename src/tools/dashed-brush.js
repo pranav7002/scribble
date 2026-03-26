@@ -1,8 +1,4 @@
 import { dist } from "../utils";
-import { hitTestBrush, getBoundsBrush, moveBrush } from "./solid-brush";
-
-
-export const hitTestDashedBrush = hitTestBrush
 
 export const renderDashedBrush = (el, ctx) => {
   ctx.save();
@@ -24,10 +20,3 @@ export const renderDashedBrush = (el, ctx) => {
 
   ctx.restore();
 }
-
-export const moveDashedBrush = moveBrush
-
-export const resize = (el, handle, x, y) => {
-}
-
-export const getBoundsDashedBrush = getBoundsBrush

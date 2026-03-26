@@ -1,264 +1,164 @@
 import {
-    canvas,
-    ctx,
-    allToolInputs,
-    allColors,
-    allOpacity,
-    strokeSlider,
-    clearBtn,
-} from "./constants.js";
+	renderRect,
+	hitTestRect,
+	moveRect,
+	resizeRect,
+	getBoundsRect,
+} from "./tools/rect";
 
 import {
-    dist,
-    area,
-    getDiagonalCorners,
-    getBounds,
-    renderSelectionOutline,
+	renderLine,
+	hitTestLine,
+	moveLine,
+	resizeLine,
+	getBoundsLine,
+} from "./tools/line";
+
+import {
+	renderCircle,
+	hitTestCircle,
+	moveCircle,
+	resizeCircle,
+	getBoundsCircle,
+} from "./tools/circle";
+
+import {
+	renderTriangle,
+	hitTestTriangle,
+	moveTriangle,
+	resizeTriangle,
+	getBoundsTriangle,
+} from "./tools/triangle";
+
+import {
+	renderSolidBrush,
+	hitTestBrush,
+	moveBrush,
+	getBoundsBrush,
+} from "./tools/solid-brush";
+
+import {
+	renderDashedBrush,
+} from "./tools/dashed-brush";
+
+import {
+	renderDottedBrush,
+} from "./tools/dotted-brush";
+
+import {
+	renderImage,
+	hitTestImage,
+	moveImage,
+	resizeImage,
+	getBoundsImage,
+	fetchImage,
+	refectchImages,
+} from "./tools/image";
+
+import {
+	renderTextbox,
+	hitTestTextbox,
+	moveTextbox,
+	resizeTextbox,
+	getBoundsTextbox,
+	textboxKeydownHandler,
+	textboxMouseupHandler,
+	defocusTextbox,
+} from "./tools/textbox";
+
+import {
+	renderSelectionUI,
     getResizeHandle,
-    loadImage,
-    isTextBoxHit,
-} from "./utils.js";
+    dist,
+	area,
+} from "./utils";
 
-// MUTABLE STATE VARIABLES
-export let elements = [];
+//CONSTANTS
 
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const allToolInputs = document.querySelectorAll("input[type='radio']");
+const allColors = document.querySelectorAll(".color");
+const allOpacity = document.querySelectorAll(".opacity-btn");
+const strokeSlider = document.getElementById("stroke");
+const clearBtn = document.getElementById("clear-tool");
+
+// STATE VARIABLES
+
+//CANVAS STATE
+let elements = [];
+let selectedElements = [];
 let currentCanvasState = "IDLE";
 let currentTool = "NONE";
-let currentToolCategory = "NONE";
-let selectedElements = [];
-let resizingKey = "REVERT";
 let movement = new Map();
-let currentColor = "#0C8EF4";
-let currentWidth = 15;
-let currentOpacity = 0.6;
 let activeTextBox = {
     element: null,
     before: "",
     after: "",
 };
 
+//COSMETIC STATE
+let currentColor = "#0C8EF4";
+let currentWidth = 15;
+let currentOpacity = 0.6;
+
 // RENDER
 
-const render = () => {
-    elements.forEach((element) => {
-        ctx.save();
-        ctx.lineWidth = element.width;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.strokeStyle = element.color || "#000";
-        ctx.globalAlpha = element.opacity;
+const renderElement = (el, ctx) => {
+    if (el.tool === "rect-tool") return renderRect(el, ctx);
+    if (el.tool === "line-tool") return renderLine(el, ctx);
+    if (el.tool === "circle-tool") return renderCircle(el, ctx);
+    if (el.tool === "triangle-tool") return renderTriangle(el, ctx);
 
-        if (element.toolCategory === "SHAPE") {
-            let { x1, y1, x2, y2, tool } = element;
+    if (el.tool === "brush-tool") return renderSolidBrush(el, ctx);
+    if (el.tool === "dash-brush-tool") return renderDashedBrush(el, ctx);
+    if (el.tool === "dotted-brush-tool") return renderDottedBrush(el, ctx);
 
-            if (tool === "rect-tool") {
-                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-            }
-            if (tool === "line-tool") {
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
-            }
-            if (tool === "circle-tool") {
-                let rad = dist(x1, y1, x2, y2);
-                ctx.beginPath();
-                ctx.arc(x1, y1, rad, 0, 2 * Math.PI, true);
-                ctx.stroke();
-            }
-            if (tool === "triangle-tool") {
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y1);
-                ctx.lineTo((x1 + x2) / 2, y2);
-                ctx.closePath();
-                ctx.stroke();
-            }
-        } else if (element.toolCategory === "FREEHAND") {
-            if (element.tool === "brush-tool") {
-                ctx.beginPath();
-                let { x, y } = element.points[0];
-                ctx.moveTo(x, y);
-                for (let i = 1; i < element.points.length; i++) {
-                    let { x, y } = element.points[i];
-                    ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-            }
-            if (element.tool === "dash-brush-tool") {
-                ctx.setLineDash([10, 20]);
-                ctx.beginPath();
-                let { x, y } = element.points[0];
-                ctx.moveTo(x, y);
-                for (let i = 1; i < element.points.length; i++) {
-                    let { x, y } = element.points[i];
-                    ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-            }
-            if (element.tool === "dotted-brush-tool") {
-                ctx.setLineDash([0.5, 18]);
-                ctx.beginPath();
-                let { x, y } = element.points[0];
-                ctx.moveTo(x, y);
-                for (let i = 1; i < element.points.length; i++) {
-                    let { x, y } = element.points[i];
-                    ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-            }
-        } else if (element.toolCategory === "IMAGE") {
-            let { x1, y1, x2, y2, state } = element;
-            let width = Math.abs(x2 - x1);
-            let height = Math.abs(y2 - y1);
-            console.log(width, height);
-
-            if (state === "image") {
-                ctx.drawImage(element.bitmap, x1, y1, width, height);
-            } else if (state === "placeholder") {
-                let corners = [
-                    { x: x1, y: y1 },
-                    { x: x2, y: y2 },
-                    { x: x1, y: y2 },
-                    { x: x2, y: y1 },
-                ];
-                corners.forEach((c) => {
-                    let side = 6;
-                    let x = c.x - 3;
-                    let y = c.y - 3;
-
-                    ctx.save();
-                    ctx.fillStyle = "#000000";
-                    ctx.fillRect(x, y, side, side);
-                    ctx.restore();
-                });
-
-                ctx.setLineDash([4, 8]);
-                ctx.lineWidth = 1.5;
-                ctx.strokeStyle = "#000000";
-                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-            }
-        } else if (element.toolCategory === "TEXT") {
-            let { x1, y1, x2, y2, state } = element;
-            if (state === "placeholder") {
-                let corners = [
-                    { x: x1, y: y1 },
-                    { x: x2, y: y2 },
-                    { x: x1, y: y2 },
-                    { x: x2, y: y1 },
-                ];
-                corners.forEach((c) => {
-                    let side = 6;
-                    let x = c.x - 3;
-                    let y = c.y - 3;
-
-                    ctx.save();
-                    ctx.fillStyle = "#000000";
-                    ctx.fillRect(x, y, side, side);
-                    ctx.restore();
-                });
-
-                ctx.setLineDash([4, 8]);
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = "#000000";
-                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-                ({ x1, y1, x2, y2 } = getDiagonalCorners(element));
-                let height = y2 - y1;
-                ctx.fillStyle = "rgb(12, 142, 244)";
-                ctx.font = `${height - 2}px Pixelify Sans`;
-                ctx.fillText("|", x1, y2);
-            } else if (state === "typing") {
-                let before = activeTextBox.before;
-                let after = activeTextBox.after;
-
-                ctx.setLineDash([4, 8]);
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = "#000000";
-                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-                ({ x1, y1, x2, y2 } = getDiagonalCorners(element));
-                let height = y2 - y1;
-                ctx.font = `${height - 2}px Pixelify Sans`;
-                ctx.fillStyle = element.color;
-                ctx.fillText(before, x1, y2);
-                let offset = ctx.measureText(before).width;
-                ctx.fillStyle = "rgb(12, 142, 244)";
-                ctx.fillText("|", x1 + offset, y2);
-                ctx.fillStyle = element.color;
-                offset = ctx.measureText(before + "|").width;
-                ctx.fillText(after, x1 + offset, y2);
-            } else if (state === "typed") {
-                ({ x1, y1, x2, y2 } = getDiagonalCorners(element));
-                let height = y2 - y1;
-                ctx.font = `${height - 2}px Pixelify Sans`;
-                ctx.fillStyle = element.color;
-                ctx.fillText(element.text, x1, y2);
-            }
-        }
-        ctx.restore();
-    });
-
-    selectedElements.forEach((el) => {
-        let { x1, y1, width, height } = getBounds(el);
-        renderSelectionOutline(x1 - 5, y1 - 5, width + 10, height + 10);
-    });
+    if (el.tool === "image-tool") return renderImage(el, ctx);
+    if (el.tool === "text-tool") return renderTextbox(el, ctx);
 };
 
-// SELECTION HELPER
+const render = (elements, selectedElements, ctx) => {
+    elements.forEach(el => {
+        renderElement(el);
+    })
 
-const getSelectedElements = ({ clientX, clientY }) => {
-    let selected = [];
-
-    elements.forEach((el) => {
-        if (el.toolCategory === "SHAPE") {
-            let { x1, y1, x2, y2 } = getDiagonalCorners(el);
-
-            if (el.tool === "rect-tool") {
-                if (clientX >= x1 && clientX <= x2 && clientY >= y1 && clientY <= y2) {
-                    selected.push(el);
-                }
-            }
-            if (el.tool === "line-tool") {
-                let d1 = dist(x1, y1, clientX, clientY);
-                let d2 = dist(clientX, clientY, x2, y2);
-                let len = dist(x1, y1, x2, y2);
-                if (d1 + d2 - len < 1) selected.push(el);
-            }
-            if (el.tool === "circle-tool") {
-                let rad = dist(x1, y1, x2, y2);
-                let distFromCenter = dist(x1, y1, clientX, clientY);
-                if (distFromCenter < rad) selected.push(el);
-            }
-            if (el.tool === "triangle-tool") {
-                let x3 = (x1 + x2) / 2;
-                let y3 = y2;
-                let A = area(x1, y1, x2, y1, x3, y3);
-                let A1 = area(clientX, clientY, x2, y1, x3, y3);
-                let A2 = area(x1, y1, clientX, clientY, x3, y3);
-                let A3 = area(x1, y1, x2, y1, clientX, clientY);
-                if (Math.abs(A - (A1 + A2 + A3)) < 0.1) selected.push(el);
-            }
-        } else if (el.toolCategory === "FREEHAND") {
-            for (let i = 0; i < el.points.length - 1; i++) {
-                let p1 = el.points[i];
-                let p2 = el.points[i + 1];
-                let len = dist(p1.x, p1.y, p2.x, p2.y);
-                let d1 = dist(p1.x, p1.y, clientX, clientY);
-                let d2 = dist(clientX, clientY, p2.x, p2.y);
-                if (Math.abs(d1 + d2 - len) < 5) {
-                    selected.push(el);
-                    break;
-                }
-            }
-        } else if (el.toolCategory === "IMAGE" || el.toolCategory === "TEXT") {
-            let { x1, y1, x2, y2 } = getDiagonalCorners(el);
-            if (clientX >= x1 && clientX <= x2 && clientY >= y1 && clientY <= y2) {
-                selected.push(el);
-            }
-        }
+    selectedElements.forEach(el => {
+        renderSelectionUI(el, ctx, {
+			showHandles: true,
+			color: "rgb(12, 142, 244)",
+			padding: 6,
+			handleSize: 8,
+		})
     });
+}
 
-    return selected;
+
+// SELECTION 
+
+const isHit = (el, x, y) => {
+    if (el.tool === "rect-tool") return hitTestRect(el, x, y);
+    if (el.tool === "line-tool") return hitTestLine(el, x, y);
+    if (el.tool === "circle-tool") return hitTestCircle(el, x, y);
+    if (el.tool === "triangle-tool") return hitTestTriangle(el, x, y);
+
+    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return hitTestBrush(el, x, y);
+
+    if (el.tool === "image-tool") return hitTestImage(el, x, y);
+    if (el.tool === "text-tool") return hitTestTextbox(el, x, y);
+}
+
+const getSelectedElements = (elements, x, y) => {
+    let selected = []
+
+    elements.forEach(el => {
+        if (isHit(el, x, y)) selected.push(el)
+    })
+    
+    return selected
 };
+
+//MOVEMENT
 
 // EVENTS
 
