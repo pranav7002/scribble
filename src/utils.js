@@ -113,3 +113,11 @@ export const loadImage = async (url) => {
     const blob = response.ok && await response.blob();
     return createImageBitmap(blob);
 }
+
+export const isTextBoxHit = (x1, y1, x2, y2, clientX, clientY) => {
+    if (clientX >= x1 && clientX <= x2 && clientY >= y1 && clientY <= y2) {
+        return true
+    } else {
+        return false
+    }
+}

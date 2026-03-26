@@ -16,6 +16,7 @@ import {
     renderSelectionOutline,
     getResizeHandle,
     loadImage,
+    isTextBoxHit
 } from "./utils.js";
 
 // MUTABLE STATE VARIABLES
@@ -159,32 +160,16 @@ const render = () => {
 
                 ctx.setLineDash([4, 8]);
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = "rgb(12, 142, 244)";
+                ctx.strokeStyle = "#000000";
                 ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
                 ({ x1, y1, x2, y2 } = getDiagonalCorners(element));
                 let height = y2 - y1;
+                ctx.fillStyle = "rgb(12, 142, 244)"
                 ctx.font = `${height - 2}px Pixelify Sans`;
                 ctx.fillText("|", x1, y2);
             } else if (state === "typing") {
                 let before = activeTextBox.before;
                 let after = activeTextBox.after;
-
-                let corners = [
-                    { x: x1, y: y1 },
-                    { x: x2, y: y2 },
-                    { x: x1, y: y2 },
-                    { x: x2, y: y1 },
-                ];
-                corners.forEach((c) => {
-                    let side = 6;
-                    let x = c.x - 3;
-                    let y = c.y - 3;
-
-                    ctx.save();
-                    ctx.fillStyle = "#000000";
-                    ctx.fillRect(x, y, side, side);
-                    ctx.restore();
-                });
 
                 ctx.setLineDash([4, 8]);
                 ctx.lineWidth = 1;
@@ -200,6 +185,11 @@ const render = () => {
                 ctx.fillStyle = "#000000";
                 offset = ctx.measureText(before + "|").width;
                 ctx.fillText(after, x1 + offset, y2);
+            } else if (state === "typed") {
+                ({ x1, y1, x2, y2 } = getDiagonalCorners(element));
+                let height = y2 - y1;
+                ctx.font = `${height - 2}px Pixelify Sans`;
+                ctx.fillText(element.text, x1, y2);
             }
         }
         ctx.restore();
@@ -313,6 +303,23 @@ allToolInputs.forEach((input) => {
 
 canvas.addEventListener("mousedown", (e) => {
     if (currentTool === "NONE") return;
+
+    if (activeTextBox.element) {
+        let corners = getDiagonalCorners(activeTextBox.element);
+        if (!isTextBoxHit(corners.x1, corners.y1, corners.x2, corners.y2, e.clientX, e.clientY)) {
+            activeTextBox.element.state = "typed"
+            activeTextBox = {
+                element: null,
+                before: "",
+                after: "",
+            };
+            ctx.font = "0px "
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            render();
+            return
+        }
+    }
+
     currentCanvasState = "EDITING";
 
     if (currentTool === "selection-tool") {
@@ -480,7 +487,7 @@ canvas.addEventListener("mouseup", () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render();
         });
-    } else if (el.tool === "text-tool") {
+    } else if (el.tool === "text-tool" && el.state === "placeholder") {
         el.state = "typing";
         activeTextBox = {
             element: el,
