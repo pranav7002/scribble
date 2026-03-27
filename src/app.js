@@ -378,9 +378,9 @@ strokeSlider.addEventListener("input", (e) => {
 });
 clearBtn.addEventListener("click", () => {
     if (elements.length === 0) return;
+    updateHistory();
     elements = [];
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updateHistory()
     localStorage.setItem("scribbleElements", JSON.stringify(elements));
 });
 allToolInputs.forEach(i => {
@@ -395,16 +395,16 @@ canvas.addEventListener("mousedown", (e) => {
 
     if (activeTextBox.element) {
         if (!isHit(activeTextBox.element, e.clientX, e.clientY)) {
+            updateHistory();
             activeTextBox = defocusTextbox(activeTextBox.element, ctx, activeTextBox);
 
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             render(elements, selectedElements, ctx)
-
-            updateHistory()
             return
         }
     }
 
+    updateHistory();
     currentCanvasState = "EDITING";
 
     if (currentTool === "selection-tool") {
@@ -497,7 +497,6 @@ canvas.addEventListener("mouseup", () => {
             startElementAngle: 0,
         };
 
-        updateHistory(); 
         localStorage.setItem("scribbleElements", JSON.stringify(elements));
         return;
     }
@@ -509,7 +508,6 @@ canvas.addEventListener("mouseup", () => {
         fetchImage(el).then(() => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render(elements, selectedElements, ctx);
-            updateHistory();
             localStorage.setItem("scribbleElements", JSON.stringify(elements));
         });
         return; 
@@ -529,15 +527,52 @@ canvas.addEventListener("mouseup", () => {
         startElementAngle: 0,
     };
 
-    updateHistory(); 
     localStorage.setItem("scribbleElements", JSON.stringify(elements));
 });
 
+const fetchImages = (els) => {
+    let promises = [];
+    els.forEach(el => {
+        if (el.tool === "image-tool" && el.data.url)
+            promises.push(loadImage(el.data.url).then(img => { el.data.img = img; }));
+    });
+    return Promise.all(promises);
+};
+
 addEventListener("keydown", (e) => {
+    // Undo
+    if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        if (!undoStack.length) return;
+        e.preventDefault();
+        redoStack.push(JSON.parse(JSON.stringify(elements)));
+        elements = undoStack.pop();
+        selectedElements = [];
+        fetchImages(elements).then(() => {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            render(elements, selectedElements, ctx);
+            localStorage.setItem("scribbleElements", JSON.stringify(elements));
+        });
+        return;
+    }
+
+    // Redo
+    if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+        if (!redoStack.length) return;
+        e.preventDefault();
+        undoStack.push(JSON.parse(JSON.stringify(elements)));
+        elements = redoStack.pop();
+        selectedElements = [];
+        fetchImages(elements).then(() => {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            render(elements, selectedElements, ctx);
+            localStorage.setItem("scribbleElements", JSON.stringify(elements));
+        });
+        return;
+    }
+
+    // Textbox input
     if (!activeTextBox.element) return;
-
     textboxKeydownHandler(e.key, activeTextBox, ctx);
-
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     render(elements, selectedElements, ctx);
 });
@@ -569,20 +604,7 @@ const savedElements = localStorage.getItem("scribbleElements");
 
 if (savedElements) {
     elements = JSON.parse(savedElements);
-
-    let promises = [];
-
-    elements.forEach((el) => {
-        if (el.tool === "image-tool" && el.data.url) {
-            promises.push(
-                loadImage(el.data.url).then((img) => {
-                    el.data.img = img;
-                }),
-            );
-        }
-    });
-
-    Promise.all(promises).then(() => render(elements, selectedElements, ctx));
+    fetchImages(elements).then(() => render(elements, selectedElements, ctx));
 }
 
 const clearSelection = () => {
@@ -602,7 +624,9 @@ const clearSelection = () => {
 }
 
 const updateHistory = () => {
-    const snapshot = JSON.parse(JSON.stringify(elements));
+    const committed = elements.filter(el => el.state !== "placeholder");
+    const snapshot = JSON.parse(JSON.stringify(committed));
     undoStack.push(snapshot);
+    redoStack = [];
 };
 
