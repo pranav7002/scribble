@@ -421,7 +421,7 @@ canvas.addEventListener("mousedown", (e) => {
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 render(elements, selectedElements, ctx);
-                return; 
+                return;
             }
         }
 
@@ -531,12 +531,15 @@ canvas.addEventListener("mousemove", (e) => {
         canvas.style.cursor = "default";
         return;
     }
-    let handle = getResizeHandle(
-        e.clientX,
-        e.clientY,
-        getBounds(selectedElements[0]),
-    );
-    canvas.style.cursor = handle && handle !== "REVERT" ? "nwse-resize" : "move";
+    if (selectedElements.length >= 1) {
+        let { lx, ly } = toLocalCoords(selectedElements[0], e.clientX, e.clientY)
+        let handle = getResizeHandle(
+            lx,
+            ly,
+            getBounds(selectedElements[0]),
+        );
+        canvas.style.cursor = handle && handle !== "REVERT" ? "nwse-resize" : "move";
+    }
 });
 
 // INITAL LOADING FROM LOCAL STORAGE
@@ -549,7 +552,7 @@ if (savedElements) {
     let promises = [];
 
     elements.forEach((el) => {
-        if (el.tool === "image-tool" && el.data?.url) {
+        if (el.tool === "image-tool" && el.data.url) {
             promises.push(
                 refetchImages(el).then((bitmap) => {
                     el.data.bitmap = bitmap;
