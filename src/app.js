@@ -72,12 +72,15 @@ import {
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-const allToolInputs = document.querySelectorAll("input[type='radio']");
-const strokeSlider = document.getElementById("stroke");
+const allToolInputs = document.querySelectorAll("input[name='tool']");
+const strokeSlider = document.getElementById("stroke-width");
 const opacitySlider = document.getElementById("opacity");
 const colorSelector = document.getElementById("color-selector");
 const themeToggleBtn = document.getElementById("theme-toggle");
 const clearBtn = document.getElementById("clear-tool");
+const colorDisplay = document.getElementById("color-display")
+const fillModeBtn = document.getElementById("paint-fill");
+const strokeModeBtn = document.getElementById("paint-stroke");
 
 // STATE VARIABLES
 
@@ -108,6 +111,7 @@ let currentColor = "#0C8EF4";
 let currentWidth = 15;
 let currentOpacity = 0.6;
 let currentTheme = "light";
+let currentPaintMode = "stroke";
 
 // RENDER
 
@@ -299,7 +303,7 @@ const createElement = (x, y) => {
     const baseStyle = {
         color: currentColor,
         opacity: currentOpacity,
-        fill: null,
+        paintMode: currentPaintMode,
         width: currentWidth
     };
 
@@ -372,6 +376,13 @@ opacitySlider.addEventListener("input", (e) => {
 });
 colorSelector.addEventListener("input", (e) => {
     currentColor = e.target.value;
+    if (colorDisplay) colorDisplay.innerText = currentColor
+});
+fillModeBtn.addEventListener("change", () => {
+    currentPaintMode = "fill";
+});
+strokeModeBtn.addEventListener("change", () => {
+    currentPaintMode = "stroke";
 });
 themeToggleBtn.addEventListener("click", () => {
     currentTheme = currentTheme === "dark" ? "light" : "dark";
@@ -442,7 +453,7 @@ canvas.addEventListener("mousedown", (e) => {
     }
     else {
         const el = createElement(e.clientX, e.clientY);
-        elements.push(el);
+        if (el) elements.push(el);
     }
 });
 
@@ -661,3 +672,9 @@ if (opacitySlider) {
 if (colorSelector) {
     currentColor = colorSelector.value || currentColor;
 }
+if (colorDisplay) {
+    colorDisplay.innerText = currentColor
+}
+
+if (fillModeBtn && fillModeBtn.checked) currentPaintMode = "fill";
+if (strokeModeBtn && strokeModeBtn.checked) currentPaintMode = "stroke";

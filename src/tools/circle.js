@@ -13,13 +13,18 @@ export const renderCircle = (el, ctx) => {
   ctx.lineWidth = el.style.width;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = el.style.color || "#000";
   ctx.globalAlpha = el.style.opacity;
 
   let rad = dist(el.x1, el.y1, el.x2, el.y2);
   ctx.beginPath();
   ctx.arc(el.x1, el.y1, rad, 0, 2 * Math.PI, true);
-  ctx.stroke();
+  if (el.style.paintMode === "fill") {
+    ctx.fillStyle = el.style.color || "#000";
+    ctx.fill();
+  } else {
+    ctx.strokeStyle = el.style.color || "#000";
+    ctx.stroke();
+  }
 
   ctx.restore();
 }

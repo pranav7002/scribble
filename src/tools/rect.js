@@ -9,11 +9,18 @@ export const hitTestRect = (el, x, y) => {
 export const renderRect = (el, ctx) => {
 	ctx.save();
 	ctx.lineWidth = el.style.width;
-	ctx.lineCap = "round";
-	ctx.lineJoin = "round";
-	ctx.strokeStyle = el.style.color || "#000";
 	ctx.globalAlpha = el.style.opacity;
-	ctx.strokeRect(el.x1, el.y1, el.x2 - el.x1, el.y2 - el.y1);
+
+	const width = el.x2 - el.x1;
+	const height	 = el.y2 - el.y1;
+
+	if (el.style.paintMode === "fill") {
+		ctx.fillStyle = el.style.color || "#000";
+		ctx.fillRect(el.x1, el.y1, width, height);
+	} else {
+		ctx.strokeStyle = el.style.color || "#000";
+		ctx.strokeRect(el.x1, el.y1, width, height);
+	}
 	ctx.restore();
 }
 

@@ -1,18 +1,16 @@
-/* Light mode color palette */
-/* https://www.figma.com/color-palettes/arctic-reflection/ */
-
 * {
   margin: 0;
   padding: 0;
   border: 0;
   font-family: "Pixelify Sans", sans-serif;
+  box-sizing: border-box;
 }
 
 :root {
   --canvas-bg: #eafbff;
-  --panel-bg: rgba(255, 255, 255, 0.88);
-  --panel-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  --text-color: #1f1f1f;
+  --panel-bg: rgba(255, 255, 255, 0.8);
+  --panel-shadow: 1px 1px 10px rgba(0, 0, 0, 0.1);
+  --text-color: #555555;
   --hover-bg: rgba(0, 0, 0, 0.08);
   --active-bg: rgba(0, 0, 0, 0.18);
   --range-track: #ddd;
@@ -21,10 +19,10 @@
 }
 
 body[data-theme="dark"] {
-  --canvas-bg: #1b2433;
+  --canvas-bg: #eafbff;
   --panel-bg: rgba(20, 25, 33, 0.88);
-  --panel-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
-  --text-color: #f2f5f8;
+  --panel-shadow: 1px 1px 10px rgba(0, 0, 0, 0.35);
+  --text-color: #d4d4d4;
   --hover-bg: rgba(255, 255, 255, 0.12);
   --active-bg: rgba(255, 255, 255, 0.2);
   --range-track: #4f5f78;
@@ -36,16 +34,39 @@ body[data-theme="dark"] {
   background: var(--canvas-bg);
   width: 100%;
   height: 100vh;
+  display: block;
 }
 
-.tool-bar {
+/* shared button style (top bar buttons + fill buttons) */
+button,
+.fill-btn {
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--input-border);
+  cursor: pointer;
+  transition: 0.1s;
+}
+
+button:hover,
+.fill-btn:hover {
+  background: var(--hover-bg);
+}
+
+button:active,
+.fill-btn:active {
+  background: var(--active-bg);
+}
+
+.top-bar {
   position: fixed;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  /* centering */
+  top: 0.4vh;
+  left: 0.3%;
+  width: 99.4%;
 
   display: flex;
+  justify-content: flex-end;
   gap: 0.5rem;
   padding: 0.5rem;
 
@@ -53,17 +74,61 @@ body[data-theme="dark"] {
   background: var(--panel-bg);
   border-radius: 0.6rem;
 
-  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.1);
+  border: 1.8px solid var(--input-border);
+  box-shadow: var(--panel-shadow);
+}
+
+.top-bar svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.sidebar {
+  position: fixed;
+  left: 0.3%;
+  top: 7.6vh;
+  height: 92vh;
+  width: 16vw;
+
+  min-width: 200px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  padding: 1.2rem;
+  padding-top: 0.4rem;
+
+  color: var(--text-color);
+  background: var(--panel-bg);
+  backdrop-filter: blur(10px);
+
+  border: 1.8px solid var(--input-border);
+  border-radius: 0.8rem;
+  box-shadow: var(--panel-shadow);
+}
+
+.section-heading {
+  font-size: 0.8rem;
+  margin-bottom: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.sidebar-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
 .tool-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 0.6rem;
 
-  padding: 0.5rem;
-  min-width: 2.5rem;
-  min-height: 2.5rem;
+  padding: 0.5rem 0 0.5rem 0.2rem;
+  min-width: 1.4rem;
+  min-height: 1.4rem;
 
   border-radius: 0.3rem;
   background: transparent;
@@ -71,57 +136,28 @@ body[data-theme="dark"] {
 }
 
 .tool-btn svg {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.tool-btn p {
+  font-size: 0.8rem;
+  color: var(--text-color);
 }
 
 .tool-btn:hover {
   background: var(--hover-bg);
 }
 
-/* the + is used to access the next elemnt when the first condn is true */
 input:checked + .tool-btn {
   background: var(--active-bg);
 }
 
-input[type="range"] {
-  accent-color: var(--range-thumb);
-}
-
-.sidebar {
-  position: fixed;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-
+.sidebar-color {
   display: flex;
-  flex-direction: column;
-  align-items: stretch; 
-  gap: 1.2rem;
-
-  padding: 1.2rem;
-  width: 200px;
-
-  color: var(--text-color);
-  background: var(--panel-bg);
-  backdrop-filter: blur(10px);
-
-  border-radius: 0.8rem;
-  box-shadow: var(--panel-shadow);
-}
-
-.width-slider,
-.opacity-slider {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.color-and-fill {
-  display: flex;
+  gap: 0.8rem;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 #color-selector {
@@ -133,32 +169,44 @@ input[type="range"] {
   cursor: pointer;
 }
 
-#fill-checkbox {
-  accent-color: #2b384c;
-  cursor: pointer;
+#color-selector::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-display {
+  user-select: none;
+}
+
+.fill-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.fill-btn {
+  flex: 1;
+  text-align: center;
+  padding: 0.4rem 0;
+}
+
+input:checked + .fill-btn {
+  background: var(--active-bg);
+}
+
+.width-slider,
+.opacity-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 input[type="range"] {
   width: 100%;
-  height: 4px;
+  height: 0.5rem;
   border-radius: 2px;
   background: var(--range-track);
-  appearance: none;
+  accent-color: var(--range-thumb);
 }
 
-.theme-toggle {
-  padding: 0.5rem 0.6rem;
-  border-radius: 0.4rem;
-  background: transparent;
-  color: var(--text-color);
-  border: 1px solid var(--input-border);
-  cursor: pointer;
-}
-
-.theme-toggle:hover {
-  background: var(--hover-bg);
-}
-
-body[data-theme="dark"] .tool-btn svg {
+body[data-theme="dark"] svg {
   filter: invert(1);
 }

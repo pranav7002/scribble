@@ -18,9 +18,6 @@ export const hitTestTriangle = (el, x, y) => {
 export const renderTriangle = (el, ctx) => {
   ctx.save();
   ctx.lineWidth = el.style.width;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = el.style.color || "#000";
   ctx.globalAlpha = el.style.opacity;
 
   ctx.beginPath();
@@ -28,7 +25,13 @@ export const renderTriangle = (el, ctx) => {
   ctx.lineTo(el.x2, el.y1);
   ctx.lineTo((el.x1 + el.x2) / 2, el.y2);
   ctx.closePath();
-  ctx.stroke();
+  if (el.style.paintMode === "fill") {
+    ctx.fillStyle = el.style.color || "#000";
+    ctx.fill();
+  } else {
+    ctx.strokeStyle = el.style.color || "#000";
+    ctx.stroke();
+  }
 
   ctx.restore();
 }
