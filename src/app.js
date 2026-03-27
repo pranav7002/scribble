@@ -73,9 +73,10 @@ import {
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const allToolInputs = document.querySelectorAll("input[type='radio']");
-const allColors = document.querySelectorAll(".color");
-const allOpacity = document.querySelectorAll(".opacity-btn");
 const strokeSlider = document.getElementById("stroke");
+const opacitySlider = document.getElementById("opacity");
+const colorSelector = document.getElementById("color-selector");
+const themeToggleBtn = document.getElementById("theme-toggle");
 const clearBtn = document.getElementById("clear-tool");
 
 // STATE VARIABLES
@@ -106,6 +107,7 @@ let redoStack = []
 let currentColor = "#0C8EF4";
 let currentWidth = 15;
 let currentOpacity = 0.6;
+let currentTheme = "light";
 
 // RENDER
 
@@ -362,18 +364,19 @@ const createElement = (x, y) => {
 
 // EVENTS
 
-allColors.forEach((color) => {
-    color.addEventListener("click", (e) => {
-        currentColor = getComputedStyle(e.target).backgroundColor;
-    });
-});
-allOpacity.forEach((opacity) => {
-    opacity.addEventListener("click", (e) => {
-        currentOpacity = Number(e.target.dataset.opacity);
-    });
-});
 strokeSlider.addEventListener("input", (e) => {
     currentWidth = Number(e.target.value);
+});
+opacitySlider.addEventListener("input", (e) => {
+    currentOpacity = Number(e.target.value);
+});
+colorSelector.addEventListener("input", (e) => {
+    currentColor = e.target.value;
+});
+themeToggleBtn.addEventListener("click", () => {
+    currentTheme = currentTheme === "dark" ? "light" : "dark";
+    applyTheme(currentTheme);
+    localStorage.setItem("scribbleTheme", currentTheme);
 });
 clearBtn.addEventListener("click", () => {
     if (elements.length === 0) return;
@@ -638,3 +641,23 @@ const updateHistory = () => {
     redoStack = [];
 };
 
+const applyTheme = (theme) => {
+    document.body.dataset.theme = theme;
+    themeToggleBtn.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+};
+
+const savedTheme = localStorage.getItem("scribbleTheme");
+if (savedTheme === "dark" || savedTheme === "light") {
+    currentTheme = savedTheme;
+}
+applyTheme(currentTheme);
+
+if (strokeSlider) {
+    currentWidth = Number(strokeSlider.value) || currentWidth;
+}
+if (opacitySlider) {
+    currentOpacity = Number(opacitySlider.value) || currentOpacity;
+}
+if (colorSelector) {
+    currentColor = colorSelector.value || currentColor;
+}
