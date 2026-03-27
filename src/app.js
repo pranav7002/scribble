@@ -77,8 +77,6 @@ const allOpacity = document.querySelectorAll(".opacity-btn");
 const strokeSlider = document.getElementById("stroke");
 const clearBtn = document.getElementById("clear-tool");
 
-
-
 // STATE VARIABLES
 
 //CANVAS STATE
@@ -496,7 +494,10 @@ canvas.addEventListener("mouseup", () => {
 
     let el = elements[elements.length - 1];
     if (el.tool === "image-tool") {
-        fetchImage(el);
+        fetchImage(el).then(() => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            render(elements, selectedElements, ctx);
+        });
     } else if (el.tool === "text-tool" && el.state === "placeholder") {
         activeTextBox = textboxMouseupHandler(el)
     }

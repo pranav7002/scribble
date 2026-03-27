@@ -11,8 +11,9 @@ export const hitTestImage = (el, x, y) => {
 export const renderImage = (el, ctx) => {
   ctx.save();
 
-  if (el.state === "image" && el.data.bitmap instanceof ImageBitmap) {
-    ctx.drawImage(el.data.bitmap, el.x1, el.y1, el.x2 - el.x1, el.y2 - el.y1);
+  if (el.state === "image") {
+    const { x1, y1, x2, y2 } = getBoundsImage(el);
+    ctx.drawImage(el.data.bitmap, x1, y1, x2 - x1, y2 - y1);
   } else if (el.state === "placeholder") {
     renderSelectionUI(getBoundsImage(el), ctx, {
       showHandles: true,
@@ -44,12 +45,12 @@ export const getBoundsImage = (el) => {
 }
 
 export const fetchImage = (el) => {
-  el.state = "image";
   let url = `https://picsum.photos/${Math.abs(el.x2 - el.x1)}/${Math.abs(el.y2 - el.y1)}`;
   el.data.url = url;
 
-  loadImage(el.data.url).then((bitmap) => {
+  return loadImage(el.data.url).then((bitmap) => {
     el.data.bitmap = bitmap;
+    el.state = "image";
   });
 }
 
