@@ -46,7 +46,6 @@ import {
     moveImage,
     resizeImage,
     fetchImage,
-    refetchImages,
 } from "./tools/image.js";
 
 import {
@@ -64,7 +63,9 @@ import {
     getResizeHandle,
     getBounds,
     isHitRotationHandle,
-    toLocalCoords
+    toLocalCoords,
+    getOffsetAngle,
+    loadImage,
 } from "./utils.js";
 
 //CONSTANTS
@@ -96,6 +97,10 @@ let activeTextBox = {
     before: "",
     after: "",
 };
+
+// UNDO/REDO
+let undoStack = []
+let redoStack = []
 
 //COSMETIC STATE
 let currentColor = "#0C8EF4";
@@ -331,7 +336,7 @@ const createElement = (x, y) => {
             state: "placeholder",
             data: {
                 url: "",
-                bitmap: null,
+                img: null,
             }
         };
     }
@@ -356,7 +361,6 @@ const createElement = (x, y) => {
     return null;
 }
 
-
 // EVENTS
 
 allColors.forEach((color) => {
@@ -376,6 +380,7 @@ clearBtn.addEventListener("click", () => {
     if (elements.length === 0) return;
     elements = [];
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    updateHistory()
     localStorage.setItem("scribbleElements", JSON.stringify(elements));
 });
 allToolInputs.forEach(i => {
@@ -394,6 +399,8 @@ canvas.addEventListener("mousedown", (e) => {
 
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             render(elements, selectedElements, ctx)
+
+            updateHistory()
             return
         }
     }
@@ -489,17 +496,28 @@ canvas.addEventListener("mouseup", () => {
             startMouseAngle: 0,
             startElementAngle: 0,
         };
+
+        updateHistory(); 
+        localStorage.setItem("scribbleElements", JSON.stringify(elements));
         return;
     }
 
     let el = elements[elements.length - 1];
+
     if (el.tool === "image-tool") {
+        currentCanvasState = "IDLE";
         fetchImage(el).then(() => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render(elements, selectedElements, ctx);
+            updateHistory();
+            localStorage.setItem("scribbleElements", JSON.stringify(elements));
         });
-    } else if (el.tool === "text-tool" && el.state === "placeholder") {
-        activeTextBox = textboxMouseupHandler(el)
+        return; 
+    }
+
+    if (el.tool === "text-tool" && el.state === "placeholder") {
+        activeTextBox = textboxMouseupHandler(el);
+        return;
     }
 
     currentCanvasState = "IDLE";
@@ -510,6 +528,8 @@ canvas.addEventListener("mouseup", () => {
         startMouseAngle: 0,
         startElementAngle: 0,
     };
+
+    updateHistory(); 
     localStorage.setItem("scribbleElements", JSON.stringify(elements));
 });
 
@@ -555,8 +575,8 @@ if (savedElements) {
     elements.forEach((el) => {
         if (el.tool === "image-tool" && el.data.url) {
             promises.push(
-                refetchImages(el).then((bitmap) => {
-                    el.data.bitmap = bitmap;
+                loadImage(el.data.url).then((img) => {
+                    el.data.img = img;
                 }),
             );
         }
@@ -581,18 +601,8 @@ const clearSelection = () => {
     render(elements, selectedElements, ctx);
 }
 
-const getOffsetAngle = (el, x, y) => {
-    let { x1, y1, x2, y2 } = getBounds(el)
-    let cx
-    let cy
+const updateHistory = () => {
+    const snapshot = JSON.parse(JSON.stringify(elements));
+    undoStack.push(snapshot);
+};
 
-    if (el.tool === 'circle-tool') {
-        cx = el.x1
-        cy = el.y1
-    } else {
-        cx = (x1 + x2) / 2
-        cy = (y1 + y2) / 2
-    }
-
-    return Math.atan2(y - cy, x - cx)
-}

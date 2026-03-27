@@ -46,11 +46,14 @@ export const getResizeHandle = (x, y, { x1, y1, x2, y2 }) => {
     return null;
 };
 
-export const loadImage = async (url) => {
-    const response = await fetch(url);
-    const blob = response.ok && await response.blob();
-    return createImageBitmap(blob);
-}
+export const loadImage = (url) => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+    });
+};
 
 export const renderSelectionUI = ({ x1, y1, x2, y2 }, ctx, options = {}) => {
     const {
@@ -168,3 +171,19 @@ because we want to roate the coords back to how they wd be if the shape wasnt ro
 
     return { lx, ly };
 };
+
+export const getOffsetAngle = (el, x, y) => {
+    let { x1, y1, x2, y2 } = getBounds(el)
+    let cx
+    let cy
+
+    if (el.tool === 'circle-tool') {
+        cx = el.x1
+        cy = el.y1
+    } else {
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+    }
+
+    return Math.atan2(y - cy, x - cx)
+}
