@@ -351,7 +351,6 @@ const createElement = (x, y) => {
                 color: currentColor,
                 opacity: currentOpacity,
             },
-            state: "placeholder",
             data: {
                 text: ""
             }
@@ -510,10 +509,19 @@ canvas.addEventListener("mouseup", () => {
             render(elements, selectedElements, ctx);
             localStorage.setItem("scribbleElements", JSON.stringify(elements));
         });
-        return; 
+        return;
     }
 
     if (el.tool === "text-tool" && el.state === "placeholder") {
+        currentCanvasState = "IDLE";  
+        resizeHandle = null;
+        movement.clear();
+        rotation = {
+            rotating: false,
+            startMouseAngle: 0,
+            startElementAngle: 0,
+        };
+
         activeTextBox = textboxMouseupHandler(el);
         return;
     }
