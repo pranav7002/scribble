@@ -62,15 +62,14 @@ export const renderSelectionUI = ({ x1, y1, x2, y2 }, ctx, options = {}) => {
     } = options;
 
     if (roatationHandle) {
-        const padding = 30
+        const padding = 40
         const cx = (x1 + x2) / 2
-        const cy = (y1 + y1) / 2
 
         ctx.save()
         ctx.strokeStyle = color
         ctx.lineWidth = 2
         ctx.beginPath()
-        ctx.arc(cx - 6, cy - padding, 6, 0, 2 * Math.PI)
+        ctx.arc(cx, y1 - padding, 6, 0, 2 * Math.PI)
         ctx.stroke()
         ctx.restore()
 
@@ -113,23 +112,14 @@ export const renderSelectionUI = ({ x1, y1, x2, y2 }, ctx, options = {}) => {
 
 export const isHitRotationHandle = (el, x, y) => {
     let { x1, y1, x2, y2 } = getBounds(el)
-    let cx
-    let cy
-
-    if (el.tool === 'circle-tool') {
-        cx = el.x1
-        cy = el.y1
-    } else {
-        cx = (x1 + x2) / 2
-        cy = (y1 + y2) / 2
-    }
+    let cx = (x1 + x2) / 2
 
     let rothandle = {
         x: cx,
-        y: cy - 30
+        y: y1 - 40
     }
 
-    if (Math.abs(x - rothandle.x) < 10 && Math.abs(y - rothandle.y)) return true
+    if (Math.abs(x - rothandle.x) < 10 && Math.abs(y - rothandle.y) < 10) return true
 
     return false
 }
@@ -146,4 +136,35 @@ export const getBounds = (el) => {
         el.tool === "dash-brush-tool" ||
         el.tool === "dotted-brush-tool"
     ) return getBoundsBrush(el);
+};
+
+export const toLocalCoords = (el, x, y) => {
+    let { x1, y1, x2, y2 } = getBounds(el);
+
+    let cx, cy;
+
+    if (el.tool === 'circle-tool') {
+        cx = el.x1;
+        cy = el.y1;
+    } else {
+        cx = (x1 + x2) / 2;
+        cy = (y1 + y2) / 2;
+    }
+
+    let dx = x - cx;
+    let dy = y - cy;
+
+    let cos = Math.cos(-el.angle);
+    let sin = Math.sin(-el.angle);
+
+/* using this formula to convert coords to unroated space (the angle used is -θ,  not θ
+because we want to roate the coords back to how they wd be if the shape wasnt rotated) */
+
+    // formula:
+    // x = x cosθ - y sinθ
+    // y = x sinθ + y cosθ
+    let lx = dx * cos - dy * sin + cx;
+    let ly = dx * sin + dy * cos + cy;
+
+    return { lx, ly };
 };

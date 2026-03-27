@@ -63,7 +63,8 @@ import {
     renderSelectionUI,
     getResizeHandle,
     getBounds,
-    isHitRotationHandle
+    isHitRotationHandle,
+    toLocalCoords
 } from "./utils.js";
 
 //CONSTANTS
@@ -191,15 +192,18 @@ window.addEventListener("resize", resizeCanvas);
 // SELECTION 
 
 const isHit = (el, x, y) => {
-    if (el.tool === "rect-tool") return hitTestRect(el, x, y);
-    if (el.tool === "line-tool") return hitTestLine(el, x, y);
-    if (el.tool === "circle-tool") return hitTestCircle(el, x, y);
-    if (el.tool === "triangle-tool") return hitTestTriangle(el, x, y);
 
-    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return hitTestBrush(el, x, y);
+    const { lx, ly } = toLocalCoords(el, x, y);
 
-    if (el.tool === "image-tool") return hitTestImage(el, x, y);
-    if (el.tool === "text-tool") return hitTestTextbox(el, x, y);
+    if (el.tool === "rect-tool") return hitTestRect(el, lx, ly);
+    if (el.tool === "line-tool") return hitTestLine(el, lx, ly);
+    if (el.tool === "circle-tool") return hitTestCircle(el, lx, ly);
+    if (el.tool === "triangle-tool") return hitTestTriangle(el, lx, ly);
+
+    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return hitTestBrush(el, lx, ly);
+
+    if (el.tool === "image-tool") return hitTestImage(el, lx, ly);
+    if (el.tool === "text-tool") return hitTestTextbox(el, lx, ly);
 }
 
 const getSelectedElements = (elements, x, y) => {
@@ -400,30 +404,36 @@ canvas.addEventListener("mousedown", (e) => {
 
     if (currentTool === "selection-tool") {
         resizeHandle = null;
+        rotation.rotating = false;
+
         if (selectedElements.length === 1) {
-            rotation.rotating = isHitRotationHandle(selectedElements[0], e.clientX, e.clientY)
-            resizeHandle = getResizeHandle(e.clientX, e.clientY, getBounds(selectedElements[0]));
-        }
-        if (resizeHandle) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            render(elements, selectedElements, ctx);
-            return;
-        } else if (rotation.rotating) {
             const el = selectedElements[0];
-            rotation.startMouseAngle = getOffsetAngle(el, e.clientX, e.clientY);
-            rotation.startElementAngle = el.angle;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            render(elements, selectedElements, ctx);
-            return;
+            const { lx, ly } = toLocalCoords(el, e.clientX, e.clientY);
+
+            resizeHandle = getResizeHandle(lx, ly, getBounds(el));
+            rotation.rotating = isHitRotationHandle(el, lx, ly);
+
+            if (resizeHandle || rotation.rotating) {
+                if (rotation.rotating) {
+                    rotation.startMouseAngle = getOffsetAngle(el, e.clientX, e.clientY);
+                    rotation.startElementAngle = el.angle;
+                }
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                render(elements, selectedElements, ctx);
+                return; 
+            }
         }
-        else if (!resizeHandle && !rotation.rotating) {
-            selectedElements = getSelectedElements(elements, e.clientX, e.clientY);
-            getOffsets(selectedElements, e.clientX, e.clientY);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            render(elements, selectedElements, ctx);
-            return;
-        }
-    } else {
+
+        selectedElements = getSelectedElements(elements, e.clientX, e.clientY);
+
+        getOffsets(selectedElements, e.clientX, e.clientY);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        render(elements, selectedElements, ctx);
+        return;
+    }
+    else {
         const el = createElement(e.clientX, e.clientY);
         elements.push(el);
     }
@@ -434,7 +444,9 @@ canvas.addEventListener("mousemove", (e) => {
 
     if (currentTool === "selection-tool") {
         if (resizeHandle) {
-            resizeElement(selectedElements[0], resizeHandle, e.clientX, e.clientY);
+            const el = selectedElements[0];
+            const { lx, ly } = toLocalCoords(el, e.clientX, e.clientY);
+            resizeElement(el, resizeHandle, lx, ly);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render(elements, selectedElements, ctx);
             return;
@@ -476,7 +488,8 @@ canvas.addEventListener("mouseup", () => {
         movement.clear();
         rotation = {
             rotating: false,
-            offsetAngle: 0,
+            startMouseAngle: 0,
+            startElementAngle: 0,
         };
         return;
     }
@@ -493,7 +506,8 @@ canvas.addEventListener("mouseup", () => {
     movement.clear();
     rotation = {
         rotating: false,
-        offsetAngle: 0,
+        startMouseAngle: 0,
+        startElementAngle: 0,
     };
     localStorage.setItem("scribbleElements", JSON.stringify(elements));
 });
@@ -576,5 +590,5 @@ const getOffsetAngle = (el, x, y) => {
         cy = (y1 + y2) / 2
     }
 
-    return Math.atan2((cy - y), (cx - x))
+    return Math.atan2(y - cy, x - cx)
 }
