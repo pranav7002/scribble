@@ -3,9 +3,9 @@ import { resizeRect } from "./rect.js";
 
 export const hitTestLine = (el, x, y) => {
 
-    let d1 = dist(x1, y1, x, y);
-    let d2 = dist(x, y, x2, y2);
-    let len = dist(x1, y1, x2, y2);
+    let d1 = dist(el.x1, el.y1, x, y);
+    let d2 = dist(x, y, el.x2, el.y2);
+    let len = dist(el.x1, el.y1, el.x2, el.y2);
     if (d1 + d2 - len < 1) return true;
 
     return false

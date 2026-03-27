@@ -37,7 +37,7 @@ body[data-theme="dark"] {
   display: block;
 }
 
-/* shared button style (top bar buttons + fill buttons) */
+/* shared button style (top bar buttons + fill buttons + layer up down) */
 button,
 .fill-btn {
   padding: 0.5rem 0.6rem;
@@ -206,8 +206,29 @@ input[type="range"] {
   border-radius: 2px;
   background: var(--range-track);
   accent-color: var(--range-thumb);
+  margin-bottom: 0.6rem;
 }
 
 body[data-theme="dark"] svg {
   filter: invert(1);
+}
+
+#layer-control {
+  display: flex;
+  gap: 1rem;
+}
+
+.layer svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.layer {
+  padding: 0.5rem 0.5rem 0.22rem 0.5rem;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--input-border);
+  cursor: pointer;
+  transition: 0.1s;
 }

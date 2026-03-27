@@ -81,6 +81,8 @@ const clearBtn = document.getElementById("clear-tool");
 const colorDisplay = document.getElementById("color-display")
 const fillModeBtn = document.getElementById("paint-fill");
 const strokeModeBtn = document.getElementById("paint-stroke");
+const layerUpBtn = document.getElementById('layer-up')
+const layerDownBtn = document.getElementById('layer-down')
 
 // STATE VARIABLES
 
@@ -678,3 +680,43 @@ if (colorDisplay) {
 
 if (fillModeBtn && fillModeBtn.checked) currentPaintMode = "fill";
 if (strokeModeBtn && strokeModeBtn.checked) currentPaintMode = "stroke";
+
+layerUpBtn.addEventListener("click", (e) => {
+    if (selectedElements.length === 1) {
+        const el = selectedElements[0]
+        if (el === elements[elements.length - 1]) return
+        let indexOfEl
+        for (let i = 0; i < elements.length; i++) {
+            if (elements[i] === el) {
+                indexOfEl = i
+                break
+            }
+        }
+        let temp = el
+        elements[indexOfEl] = elements[indexOfEl + 1]
+        elements[indexOfEl + 1] = temp
+
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        render(elements, selectedElements, ctx);    
+    }
+})
+
+layerDownBtn.addEventListener("click", (e) => {
+    if (selectedElements.length === 1) {
+        const el = selectedElements[0]
+        if (el === elements[0]) return
+        let indexOfEl
+        for (let i = 0; i < elements.length; i++) {
+            if (elements[i] === el) {
+                indexOfEl = i
+                break
+            }
+        }
+        let temp = el
+        elements[indexOfEl] = elements[indexOfEl - 1]
+        elements[indexOfEl - 1] = temp
+
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        render(elements, selectedElements, ctx);    
+    }
+})
