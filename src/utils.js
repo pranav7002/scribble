@@ -1,3 +1,11 @@
+import { getBoundsBrush } from "./tools/solid-brush.js";
+import { getBoundsCircle } from "./tools/circle.js";
+import { getBoundsImage } from "./tools/image.js";
+import { getBoundsLine } from "./tools/line.js";
+import { getBoundsRect } from "./tools/rect.js";
+import { getBoundsTextbox } from "./tools/textbox.js";
+import { getBoundsTriangle } from "./tools/triangle.js";
+
 export const dist = (x1, y1, x2, y2) => {
     let dx = x2 - x1;
     let dy = y2 - y1;
@@ -46,11 +54,28 @@ export const loadImage = async (url) => {
 
 export const renderSelectionUI = ({ x1, y1, x2, y2 }, ctx, options = {}) => {
     const {
-        showHandles = true,
+        roatationHandle = false,
         color = "rgb(12, 142, 244)",
+        showHandles = true,
         padding = 6,
         handleSize = 8,
     } = options;
+
+    if (roatationHandle) {
+        const padding = 30
+        const cx = (x1 + x2) / 2
+        const cy = (y1 + y1) / 2
+
+        ctx.save()
+        ctx.strokeStyle = color
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.arc(cx - 6, cy - padding, 6, 0, 2 * Math.PI)
+        ctx.stroke()
+        ctx.restore()
+
+        return;
+    }
 
     const width = x2 - x1;
     const height = y2 - y1;
@@ -86,3 +111,39 @@ export const renderSelectionUI = ({ x1, y1, x2, y2 }, ctx, options = {}) => {
     });
 };
 
+export const isHitRotationHandle = (el, x, y) => {
+    let { x1, y1, x2, y2 } = getBounds(el)
+    let cx
+    let cy
+
+    if (el.tool === 'circle-tool') {
+        cx = el.x1
+        cy = el.y1
+    } else {
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+    }
+
+    let rothandle = {
+        x: cx,
+        y: cy - 30
+    }
+
+    if (Math.abs(x - rothandle.x) < 10 && Math.abs(y - rothandle.y)) return true
+
+    return false
+}
+
+export const getBounds = (el) => {
+    if (el.tool === "rect-tool") return getBoundsRect(el);
+    if (el.tool === "line-tool") return getBoundsLine(el);
+    if (el.tool === "circle-tool") return getBoundsCircle(el);
+    if (el.tool === "triangle-tool") return getBoundsTriangle(el);
+    if (el.tool === "image-tool") return getBoundsImage(el);
+    if (el.tool === "text-tool") return getBoundsTextbox(el);
+    if (
+        el.tool === "brush-tool" ||
+        el.tool === "dash-brush-tool" ||
+        el.tool === "dotted-brush-tool"
+    ) return getBoundsBrush(el);
+};

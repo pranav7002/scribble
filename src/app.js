@@ -3,7 +3,6 @@ import {
     hitTestRect,
     moveRect,
     resizeRect,
-    getBoundsRect,
 } from "./tools/rect.js";
 
 import {
@@ -11,7 +10,6 @@ import {
     hitTestLine,
     moveLine,
     resizeLine,
-    getBoundsLine,
 } from "./tools/line.js";
 
 import {
@@ -19,7 +17,6 @@ import {
     hitTestCircle,
     moveCircle,
     resizeCircle,
-    getBoundsCircle,
 } from "./tools/circle.js";
 
 import {
@@ -27,14 +24,12 @@ import {
     hitTestTriangle,
     moveTriangle,
     resizeTriangle,
-    getBoundsTriangle,
 } from "./tools/triangle.js";
 
 import {
     renderSolidBrush,
     hitTestBrush,
     moveBrush,
-    getBoundsBrush,
 } from "./tools/solid-brush.js";
 
 import {
@@ -50,7 +45,6 @@ import {
     hitTestImage,
     moveImage,
     resizeImage,
-    getBoundsImage,
     fetchImage,
     refetchImages,
 } from "./tools/image.js";
@@ -60,7 +54,6 @@ import {
     hitTestTextbox,
     moveTextbox,
     resizeTextbox,
-    getBoundsTextbox,
     textboxKeydownHandler,
     textboxMouseupHandler,
     defocusTextbox,
@@ -69,6 +62,8 @@ import {
 import {
     renderSelectionUI,
     getResizeHandle,
+    getBounds,
+    isHitRotationHandle
 } from "./utils.js";
 
 //CONSTANTS
@@ -92,6 +87,11 @@ let currentCanvasState = "IDLE";
 let currentTool = "NONE";
 let movement = new Map();
 let resizeHandle = null;
+let rotation = {
+    rotating: false,
+    startMouseAngle: 0,
+    startElementAngle: 0,
+};
 let activeTextBox = {
     element: null,
     before: "",
@@ -121,19 +121,59 @@ const renderElement = (el, ctx) => {
 
 const render = (elements, selectedElements, ctx) => {
     elements.forEach(el => {
+        let { x1, y1, x2, y2 } = getBounds(el)
+        let cx
+        let cy
+
+        if (el.tool === 'circle-tool') {
+            cx = el.x1
+            cy = el.y1
+        } else {
+            cx = (x1 + x2) / 2
+            cy = (y1 + y2) / 2
+        }
+
+        ctx.save()
+
+        ctx.translate(cx, cy)
+        ctx.rotate(el.angle)
+        ctx.translate(-cx, -cy)
         renderElement(el, ctx);
+
+        ctx.restore()
     })
 
     selectedElements.forEach(el => {
+        let { x1, y1, x2, y2 } = getBounds(el)
+        let cx
+        let cy
+
+        if (el.tool === 'circle-tool') {
+            cx = el.x1
+            cy = el.y1
+        } else {
+            cx = (x1 + x2) / 2
+            cy = (y1 + y2) / 2
+        }
+
+        ctx.save()
+
+        ctx.translate(cx, cy)
+        ctx.rotate(el.angle)
+        ctx.translate(-cx, -cy)
+
         renderSelectionUI(getBounds(el), ctx, {
             showHandles: true,
             color: "rgb(12, 142, 244)",
             padding: 6,
             handleSize: 8,
         })
-    });
+        renderSelectionUI(getBounds(el), ctx, {
+            roatationHandle: true,
+        })
 
-    ctx.restore()
+        ctx.restore()
+    });
     ctx.font = "0px"
 }
 
@@ -244,22 +284,6 @@ const resizeElement = (el, handle, x, y) => {
     if (el.tool === "text-tool") return;
 }
 
-// BOUNDS
-
-const getBounds = (el) => {
-    if (el.tool === "rect-tool") return getBoundsRect(el);
-    if (el.tool === "line-tool") return getBoundsLine(el);
-    if (el.tool === "circle-tool") return getBoundsCircle(el);
-    if (el.tool === "triangle-tool") return getBoundsTriangle(el);
-    if (el.tool === "image-tool") return getBoundsImage(el);
-    if (el.tool === "text-tool") return getBoundsTextbox(el);
-    if (
-        el.tool === "brush-tool" ||
-        el.tool === "dash-brush-tool" ||
-        el.tool === "dotted-brush-tool"
-    ) return getBoundsBrush(el);
-};
-
 // ELEMENT CREATION 
 
 const createElement = (x, y) => {
@@ -279,6 +303,7 @@ const createElement = (x, y) => {
         return {
             x1: x, y1: y, x2: x, y2: y,
             style: baseStyle,
+            angle: 0,
             tool: currentTool,
         };
     }
@@ -291,6 +316,7 @@ const createElement = (x, y) => {
         return {
             points: [{ x, y }],
             style: baseStyle,
+            angle: 0,
             tool: currentTool
         };
     }
@@ -299,6 +325,7 @@ const createElement = (x, y) => {
         return {
             x1: x, y1: y, x2: x, y2: y,
             tool: currentTool,
+            angle: 0,
             state: "placeholder",
             data: {
                 url: "",
@@ -312,6 +339,7 @@ const createElement = (x, y) => {
             x1: x, y1: y, x2: x, y2: y,
             tool: currentTool,
             state: "placeholder",
+            angle: 0,
             style: {
                 color: currentColor,
                 opacity: currentOpacity,
@@ -373,14 +401,22 @@ canvas.addEventListener("mousedown", (e) => {
     if (currentTool === "selection-tool") {
         resizeHandle = null;
         if (selectedElements.length === 1) {
+            rotation.rotating = isHitRotationHandle(selectedElements[0], e.clientX, e.clientY)
             resizeHandle = getResizeHandle(e.clientX, e.clientY, getBounds(selectedElements[0]));
         }
         if (resizeHandle) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render(elements, selectedElements, ctx);
-            console.log(resizeHandle)
             return;
-        } else if (!resizeHandle) {
+        } else if (rotation.rotating) {
+            const el = selectedElements[0];
+            rotation.startMouseAngle = getOffsetAngle(el, e.clientX, e.clientY);
+            rotation.startElementAngle = el.angle;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            render(elements, selectedElements, ctx);
+            return;
+        }
+        else if (!resizeHandle && !rotation.rotating) {
             selectedElements = getSelectedElements(elements, e.clientX, e.clientY);
             getOffsets(selectedElements, e.clientX, e.clientY);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -399,6 +435,17 @@ canvas.addEventListener("mousemove", (e) => {
     if (currentTool === "selection-tool") {
         if (resizeHandle) {
             resizeElement(selectedElements[0], resizeHandle, e.clientX, e.clientY);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            render(elements, selectedElements, ctx);
+            return;
+        }
+        if (rotation.rotating) {
+            const el = selectedElements[0];
+
+            let currentMouseAngle = getOffsetAngle(el, e.clientX, e.clientY);
+            el.angle =
+                rotation.startElementAngle +
+                (currentMouseAngle - rotation.startMouseAngle);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render(elements, selectedElements, ctx);
             return;
@@ -427,6 +474,10 @@ canvas.addEventListener("mouseup", () => {
         currentCanvasState = "IDLE";
         resizeHandle = null;
         movement.clear();
+        rotation = {
+            rotating: false,
+            offsetAngle: 0,
+        };
         return;
     }
 
@@ -440,6 +491,10 @@ canvas.addEventListener("mouseup", () => {
     currentCanvasState = "IDLE";
     resizeHandle = null;
     movement.clear();
+    rotation = {
+        rotating: false,
+        offsetAngle: 0,
+    };
     localStorage.setItem("scribbleElements", JSON.stringify(elements));
 });
 
@@ -508,3 +563,18 @@ const clearSelection = () => {
     render(elements, selectedElements, ctx);
 }
 
+const getOffsetAngle = (el, x, y) => {
+    let { x1, y1, x2, y2 } = getBounds(el)
+    let cx
+    let cy
+
+    if (el.tool === 'circle-tool') {
+        cx = el.x1
+        cy = el.y1
+    } else {
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+    }
+
+    return Math.atan2((cy - y), (cx - x))
+}

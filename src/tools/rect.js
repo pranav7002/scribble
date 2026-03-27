@@ -39,3 +39,4 @@ export const getBoundsRect = (el) => {
 		y2: Math.max(el.y1, el.y2),
 	};
 }
+
