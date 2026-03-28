@@ -101,6 +101,11 @@ export const textboxKeydownHandler = (key, activeTextBox, ctx) => {
 
 		if (width <= maxWidth) {
 			before = before + key;
+		} else {
+			before = before + key;
+			ctx.font = `${activeTextBox.element.y2 - activeTextBox.element.y1 - 2}px Pixelify Sans`;
+
+			activeTextBox.element.x2 = activeTextBox.element.x1 + width
 		}
 
 	} else if (key === "Backspace") {
@@ -151,3 +156,4 @@ export const defocusTextbox = (el, ctx) => {
 		after: "",
 	};
 };
+

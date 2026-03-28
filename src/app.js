@@ -666,7 +666,7 @@ addEventListener("keydown", (e) => {
     // tool shortcuts 1 to N, 0 for selection tool
     if (!activeTextBox.element && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const n = Number(e.key);
-        if (e.key === "s") {
+        if (e.key === "s" || e.key === "S") {
             const target = document.getElementById(tools.SELECTION)
             if (target) {
                 target.checked = true;
@@ -674,7 +674,7 @@ addEventListener("keydown", (e) => {
                 currentTool = tools.SELECTION
                 return;
             }
-        } else if (e.key === 'e') {
+        } else if (e.key === 'e' || e.key === "E") {
             const target = document.getElementById('eraser-tool')
             if (target) {
                 target.checked = true;
@@ -812,6 +812,9 @@ if (colorDisplay) {
 
 if (fillModeBtn && fillModeBtn.checked) currentPaintMode = paintModes.FILL;
 if (strokeModeBtn && strokeModeBtn.checked) currentPaintMode = paintModes.STROKE;
+
+
+//LAYERS
 
 layerUpBtn.addEventListener("click", (e) => {
     if (selectedElements.length === 1) {
