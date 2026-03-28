@@ -64,7 +64,7 @@ button:active,
   top: 0.5%;
   left: 0.3%;
   width: 99.4%;
-  height: 7%;
+  height: 6.5%;
 
   display: flex;
   justify-content: flex-end;
@@ -87,7 +87,7 @@ button:active,
 .sidebar {
   position: fixed;
   left: 0.3%;
-  top: 8%;
+  top: 7.4%;
   height: 91%;
   width: 16vw;
 
@@ -158,13 +158,14 @@ input:checked + .tool-btn {
   display: flex;
   gap: 0.8rem;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.1rem;
+
 }
 
 #color-selector {
   width: 36px;
   height: 36px;
-  border: 2px solid var(--input-border);
+  border: 1.5px solid var(--input-border);
   border-radius: 8px;
   padding: 0;
   cursor: pointer;
@@ -206,7 +207,7 @@ input[type="range"] {
   border-radius: 2px;
   background: var(--range-track);
   accent-color: var(--range-thumb);
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.2rem;
 }
 
 body[data-theme="dark"] svg {
@@ -219,8 +220,8 @@ body[data-theme="dark"] svg {
 }
 
 .layer svg {
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .layer {
@@ -231,4 +232,72 @@ body[data-theme="dark"] svg {
   border: 1px solid var(--input-border);
   cursor: pointer;
   transition: 0.1s;
+}
+
+@media (max-width: 600px) {
+
+  .sidebar {
+    top: 4rem;
+    width: 3.4rem;
+    min-width: 0;
+    padding: 0.4rem 0.2rem;
+    align-items: center; 
+    height: fit-content;
+  }
+  .sidebar-tools {
+    gap: 0.4rem
+  }
+  .tool-btn {
+    width: 2.4rem;
+    height: 2.4rem;
+    padding: 0; 
+    display: flex;
+    align-items: center;
+
+    justify-content: center; 
+    border: 1px solid var(--input-border);
+    border-radius: 0.5rem;
+  }
+
+  .tool-btn svg {
+    width: 1.3rem;
+    height: 1.3rem;
+  }
+
+  .tool-btn p {
+    display: none;
+  }
+
+  .sidebar-tools {
+    align-items: center;
+  }
+
+  .layer {
+    width: 2.4rem;
+    height: 2.4rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #layer-control {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0;
+  }
+
+  .fill-selector,
+  input[type="range"],
+  .section-heading {
+    display: none;
+  }
+  .sidebar-color {
+    margin-bottom: 0;
+    margin-top: 0.35rem;
+  }
+  .top-bar {
+    height: 3.6rem;
+  }
 }
