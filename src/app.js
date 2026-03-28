@@ -564,6 +564,31 @@ const fetchImages = (els) => {
 };
 
 addEventListener("keydown", (e) => {
+    // tool shortcuts 1 to N, 0 for selection tool
+    if (!activeTextBox.element && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const n = Number(e.key);
+        if (e.key === "0") {
+            const target = document.getElementById('selection-tool')
+            if (target) {
+                target.checked = true;
+                clearSelection();
+                currentTool = 'selection-tool'
+                return;
+            }
+        } else if (Number.isInteger(n) && n >= 1) {
+            const toolInputs = document.querySelectorAll("#sidebar-tools input[name='tool']");
+            if (n <= toolInputs.length) {
+                const target = toolInputs[n - 1];
+                if (target) {
+                    target.checked = true;
+                    clearSelection();
+                    currentTool = target.id;
+                    return;
+                }
+            }
+        }
+    }
+
     // Undo
     if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         if (!undoStack.length) return;
