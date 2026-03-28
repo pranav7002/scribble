@@ -322,8 +322,11 @@ body[data-theme="dark"] svg {
   margin-left: 0.4rem;
 }
 
-
 .nav-right {
   display: flex;
   gap: 0.3rem;
+}
+
+.fill-section {
+  display: none;
 }

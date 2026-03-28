@@ -79,6 +79,7 @@ const fillModeBtn = document.getElementById("paint-fill");
 const strokeModeBtn = document.getElementById("paint-stroke");
 const layerUpBtn = document.getElementById('layer-up')
 const layerDownBtn = document.getElementById('layer-down')
+const fillSelector = document.querySelector(".fill-section")
 
 //ENUMS
 const canvasStates = {
@@ -855,3 +856,15 @@ layerDownBtn.addEventListener("click", (e) => {
         render(elements, selectedElements, ctx);
     }
 })
+
+// UI FIX 
+
+allToolInputs.forEach(tl => {
+    tl.addEventListener("change", (e) => {
+        if (e.target.id === tools.RECT || e.target.id === tools.CIRCLE || e.target.id === tools.TRIANGLE) {
+            fillSelector.style.display = "block";
+        } else {
+            fillSelector.style.display = "none";
+        }
+    })
+}) 
