@@ -41,9 +41,6 @@ export const moveBrush = (el, dx, dy) => {
   })
 }
 
-export const resize = (el, handle, x, y) => {
-}
-
 export const getBoundsBrush = (el) => {
   let minX = el.points[0].x;
   let maxX = el.points[0].x;

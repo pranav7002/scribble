@@ -77,9 +77,6 @@ export const moveTextbox = (el, dx, dy) => {
 	el.y2 += dy
 }
 
-export const resizeTextbox = (el, handle, x, y) => {
-}
-
 export const getBoundsTextbox = (el) => {
 	return {
 		x1: Math.min(el.x1, el.x2),

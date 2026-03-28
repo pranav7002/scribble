@@ -1,5 +1,4 @@
 import { dist } from "../utils.js";
-import { resizeRect } from "./rect.js";
 
 export const hitTestCircle = (el, x, y) => {
   let r = dist(el.x1, el.y1, el.x2, el.y2);
@@ -35,8 +34,6 @@ export const moveCircle = (el, dx, dy) => {
   el.x2 += dx
   el.y2 += dy
 }
-
-export const resizeCircle = resizeRect
 
 export const getBoundsCircle = (el) => {
   let r = dist(el.x1, el.y1, el.x2, el.y2);

@@ -2,28 +2,24 @@ import {
     renderRect,
     hitTestRect,
     moveRect,
-    resizeRect,
 } from "./tools/rect.js";
 
 import {
     renderLine,
     hitTestLine,
     moveLine,
-    resizeLine,
 } from "./tools/line.js";
 
 import {
     renderCircle,
     hitTestCircle,
     moveCircle,
-    resizeCircle,
 } from "./tools/circle.js";
 
 import {
     renderTriangle,
     hitTestTriangle,
     moveTriangle,
-    resizeTriangle,
 } from "./tools/triangle.js";
 
 import {
@@ -44,7 +40,6 @@ import {
     renderImage,
     hitTestImage,
     moveImage,
-    resizeImage,
     fetchImage,
 } from "./tools/image.js";
 
@@ -52,7 +47,6 @@ import {
     renderTextbox,
     hitTestTextbox,
     moveTextbox,
-    resizeTextbox,
     textboxKeydownHandler,
     textboxMouseupHandler,
     defocusTextbox,
@@ -66,6 +60,7 @@ import {
     toLocalCoords,
     getOffsetAngle,
     loadImage,
+    resize
 } from "./utils.js";
 
 //CONSTANTS
@@ -86,11 +81,40 @@ const layerDownBtn = document.getElementById('layer-down')
 
 // STATE VARIABLES
 
+//ENUMS
+const canvasStates = {
+    IDLE: 'IDLE',
+    EDITING: 'EDITING'
+}
+const tools = {
+    NONE: 'NONE',
+    RECT: 'rect-tool',
+    LINE: 'line-tool',
+    CIRCLE: 'circle-tool',
+    TRIANGLE: 'triangle-tool',
+    BRUSH: 'brush-tool',
+    DASHED_BRUSH: 'dash-brush-tool',
+    DOTTED_BRUSH: 'dotted-brush-tool',
+    TEXT: 'text-tool',
+    IMAGE: 'image-tool',
+    SELECTION: 'selection-tool'
+}
+
+const paintModes = {
+    FILL: 'fill',
+    STROKE: 'stroke'
+}
+
+const themes = {
+    DARK: 'dark',
+    LIGHT: 'light'
+}
+
 //CANVAS STATE
 let elements = [];
 let selectedElements = [];
-let currentCanvasState = "IDLE";
-let currentTool = "NONE";
+let currentCanvasState = canvasStates.IDLE;
+let currentTool = tools.NONE;
 let movement = new Map();
 let resizeHandle = null;
 let rotation = {
@@ -112,23 +136,23 @@ let redoStack = []
 let currentColor = "#0C8EF4";
 let currentWidth = 15;
 let currentOpacity = 0.6;
-let currentTheme = "light";
-let currentPaintMode = "stroke";
+let currentTheme = themes.LIGHT;
+let currentPaintMode = paintModes.STROKE;
 
 // RENDER
 
 const renderElement = (el, ctx) => {
-    if (el.tool === "rect-tool") return renderRect(el, ctx);
-    if (el.tool === "line-tool") return renderLine(el, ctx);
-    if (el.tool === "circle-tool") return renderCircle(el, ctx);
-    if (el.tool === "triangle-tool") return renderTriangle(el, ctx);
+    if (el.tool === tools.RECT) return renderRect(el, ctx);
+    if (el.tool === tools.LINE) return renderLine(el, ctx);
+    if (el.tool === tools.CIRCLE) return renderCircle(el, ctx);
+    if (el.tool === tools.TRIANGLE) return renderTriangle(el, ctx);
 
-    if (el.tool === "brush-tool") return renderSolidBrush(el, ctx);
-    if (el.tool === "dash-brush-tool") return renderDashedBrush(el, ctx);
-    if (el.tool === "dotted-brush-tool") return renderDottedBrush(el, ctx);
+    if (el.tool === tools.BRUSH) return renderSolidBrush(el, ctx);
+    if (el.tool === tools.DASHED_BRUSH) return renderDashedBrush(el, ctx);
+    if (el.tool === tools.DOTTED_BRUSH) return renderDottedBrush(el, ctx);
 
-    if (el.tool === "image-tool") return renderImage(el, ctx);
-    if (el.tool === "text-tool") return renderTextbox(el, ctx, activeTextBox);
+    if (el.tool === tools.IMAGE) return renderImage(el, ctx);
+    if (el.tool === tools.TEXT) return renderTextbox(el, ctx, activeTextBox);
 };
 
 const render = (elements, selectedElements, ctx) => {
@@ -137,7 +161,7 @@ const render = (elements, selectedElements, ctx) => {
         let cx
         let cy
 
-        if (el.tool === 'circle-tool') {
+        if (el.tool === tools.CIRCLE) {
             cx = el.x1
             cy = el.y1
         } else {
@@ -160,7 +184,7 @@ const render = (elements, selectedElements, ctx) => {
         let cx
         let cy
 
-        if (el.tool === 'circle-tool') {
+        if (el.tool === tools.CIRCLE) {
             cx = el.x1
             cy = el.y1
         } else {
@@ -206,15 +230,15 @@ const isHit = (el, x, y) => {
 
     const { lx, ly } = toLocalCoords(el, x, y);
 
-    if (el.tool === "rect-tool") return hitTestRect(el, lx, ly);
-    if (el.tool === "line-tool") return hitTestLine(el, lx, ly);
-    if (el.tool === "circle-tool") return hitTestCircle(el, lx, ly);
-    if (el.tool === "triangle-tool") return hitTestTriangle(el, lx, ly);
+    if (el.tool === tools.RECT) return hitTestRect(el, lx, ly);
+    if (el.tool === tools.LINE) return hitTestLine(el, lx, ly);
+    if (el.tool === tools.CIRCLE) return hitTestCircle(el, lx, ly);
+    if (el.tool === tools.TRIANGLE) return hitTestTriangle(el, lx, ly);
 
-    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return hitTestBrush(el, lx, ly);
+    if (el.tool === tools.BRUSH || el.tool === tools.DASHED_BRUSH || el.tool === tools.DOTTED_BRUSH) return hitTestBrush(el, lx, ly);
 
-    if (el.tool === "image-tool") return hitTestImage(el, lx, ly);
-    if (el.tool === "text-tool") return hitTestTextbox(el, lx, ly);
+    if (el.tool === tools.IMAGE) return hitTestImage(el, lx, ly);
+    if (el.tool === tools.TEXT) return hitTestTextbox(el, lx, ly);
 }
 
 const getSelectedElements = (elements, x, y) => {
@@ -231,7 +255,7 @@ const getSelectedElements = (elements, x, y) => {
 
 const getOffsets = (selectedElements, x, y) => {
     selectedElements.forEach(el => {
-        if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") {
+        if (el.tool === tools.BRUSH || el.tool === tools.DASHED_BRUSH || el.tool === tools.DOTTED_BRUSH) {
             let offsets = [];
             el.points.forEach((p) => {
                 offsets.push({ x: p.x - x, y: p.y - y });
@@ -246,15 +270,15 @@ const getOffsets = (selectedElements, x, y) => {
 }
 
 const moveElement = (el, dx, dy) => {
-    if (el.tool === "rect-tool") return moveRect(el, dx, dy);
-    if (el.tool === "line-tool") return moveLine(el, dx, dy);
-    if (el.tool === "circle-tool") return moveCircle(el, dx, dy);
-    if (el.tool === "triangle-tool") return moveTriangle(el, dx, dy);
+    if (el.tool === tools.RECT) return moveRect(el, dx, dy);
+    if (el.tool === tools.LINE) return moveLine(el, dx, dy);
+    if (el.tool === tools.CIRCLE) return moveCircle(el, dx, dy);
+    if (el.tool === tools.TRIANGLE) return moveTriangle(el, dx, dy);
 
-    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return moveBrush(el, dx, dy); // moveBrush imported from solid-brush
+    if (el.tool === tools.BRUSH || el.tool === tools.DASHED_BRUSH || el.tool === tools.DOTTED_BRUSH) return moveBrush(el, dx, dy); // moveBrush imported from solid-brush
 
-    if (el.tool === "image-tool") return moveImage(el, dx, dy);
-    if (el.tool === "text-tool") return moveTextbox(el, dx, dy);
+    if (el.tool === tools.IMAGE) return moveImage(el, dx, dy);
+    if (el.tool === tools.TEXT) return moveTextbox(el, dx, dy);
 };
 
 const move = (selectedElements, x, y) => {
@@ -262,9 +286,9 @@ const move = (selectedElements, x, y) => {
         const data = movement.get(el);
 
         if (
-            el.tool === "brush-tool" ||
-            el.tool === "dash-brush-tool" ||
-            el.tool === "dotted-brush-tool"
+            el.tool === tools.BRUSH ||
+            el.tool === tools.DASHED_BRUSH ||
+            el.tool === tools.DOTTED_BRUSH
         ) {
             // using first point as reference
             const first = el.points[0];
@@ -289,14 +313,14 @@ const move = (selectedElements, x, y) => {
 // RESIZE
 
 const resizeElement = (el, handle, x, y) => {
-    if (el.tool === "rect-tool") return resizeRect(el, handle, x, y);
-    if (el.tool === "line-tool") return resizeLine(el, handle, x, y);
-    if (el.tool === "circle-tool") return resizeCircle(el, handle, x, y);
-    if (el.tool === "triangle-tool") return resizeTriangle(el, handle, x, y);
-    if (el.tool === "image-tool") return resizeImage(el, handle, x, y);
+    if (el.tool === tools.RECT) return resize(el, handle, x, y);
+    if (el.tool === tools.LINE) return resize(el, handle, x, y);
+    if (el.tool === tools.CIRCLE) return resize(el, handle, x, y);
+    if (el.tool === tools.TRIANGLE) return resize(el, handle, x, y);
+    if (el.tool === tools.IMAGE) return resize(el, handle, x, y);
 
-    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") return;
-    if (el.tool === "text-tool") return;
+    if (el.tool === tools.BRUSH || el.tool === tools.DASHED_BRUSH || el.tool === tools.DOTTED_BRUSH) return;
+    if (el.tool === tools.TEXT) return;
 }
 
 // ELEMENT CREATION 
@@ -310,10 +334,10 @@ const createElement = (x, y) => {
     };
 
     if (
-        currentTool === "rect-tool" ||
-        currentTool === "line-tool" ||
-        currentTool === "circle-tool" ||
-        currentTool === "triangle-tool"
+        currentTool === tools.RECT ||
+        currentTool === tools.LINE ||
+        currentTool === tools.CIRCLE ||
+        currentTool === tools.TRIANGLE
     ) {
         return {
             x1: x, y1: y, x2: x, y2: y,
@@ -324,9 +348,9 @@ const createElement = (x, y) => {
     }
 
     if (
-        currentTool === "brush-tool" ||
-        currentTool === "dash-brush-tool" ||
-        currentTool === "dotted-brush-tool"
+        currentTool === tools.BRUSH ||
+        currentTool === tools.DASHED_BRUSH ||
+        currentTool === tools.DOTTED_BRUSH
     ) {
         return {
             points: [{ x, y }],
@@ -336,7 +360,7 @@ const createElement = (x, y) => {
         };
     }
 
-    if (currentTool === "image-tool") {
+    if (currentTool === tools.IMAGE) {
         return {
             x1: x, y1: y, x2: x, y2: y,
             tool: currentTool,
@@ -349,7 +373,7 @@ const createElement = (x, y) => {
         };
     }
 
-    if (currentTool === "text-tool") {
+    if (currentTool === tools.TEXT) {
         return {
             x1: x, y1: y, x2: x, y2: y,
             tool: currentTool,
@@ -381,13 +405,13 @@ colorSelector.addEventListener("input", (e) => {
     if (colorDisplay) colorDisplay.innerText = currentColor
 });
 fillModeBtn.addEventListener("change", () => {
-    currentPaintMode = "fill";
+    currentPaintMode = paintModes.FILL;
 });
 strokeModeBtn.addEventListener("change", () => {
-    currentPaintMode = "stroke";
+    currentPaintMode = paintModes.STROKE;
 });
 themeToggleBtn.addEventListener("click", () => {
-    currentTheme = currentTheme === "dark" ? "light" : "dark";
+    currentTheme = currentTheme === themes.DARK ? themes.LIGHT : themes.DARK;
     applyTheme(currentTheme);
     localStorage.setItem("scribbleTheme", currentTheme);
 });
@@ -406,7 +430,7 @@ allToolInputs.forEach(i => {
 });
 
 canvas.addEventListener("mousedown", (e) => {
-    if (currentTool === "NONE") return;
+    if (currentTool === tools.NONE) return;
 
     if (activeTextBox.element) {
         if (!isHit(activeTextBox.element, e.clientX, e.clientY)) {
@@ -420,9 +444,9 @@ canvas.addEventListener("mousedown", (e) => {
     }
 
     updateHistory();
-    currentCanvasState = "EDITING";
+    currentCanvasState = canvasStates.EDITING;
 
-    if (currentTool === "selection-tool") {
+    if (currentTool === tools.SELECTION) {
         resizeHandle = null;
         rotation.rotating = false;
 
@@ -460,9 +484,9 @@ canvas.addEventListener("mousedown", (e) => {
 });
 
 canvas.addEventListener("mousemove", (e) => {
-    if (currentCanvasState !== "EDITING") return;
+    if (currentCanvasState !== canvasStates.EDITING) return;
 
-    if (currentTool === "selection-tool") {
+    if (currentTool === tools.SELECTION) {
         if (resizeHandle) {
             const el = selectedElements[0];
             const { lx, ly } = toLocalCoords(el, e.clientX, e.clientY);
@@ -491,7 +515,7 @@ canvas.addEventListener("mousemove", (e) => {
 
     let el = elements[elements.length - 1];
 
-    if (el.tool === "brush-tool" || el.tool === "dash-brush-tool" || el.tool === "dotted-brush-tool") {
+    if (el.tool === tools.BRUSH || el.tool === tools.DASHED_BRUSH || el.tool === tools.DOTTED_BRUSH) {
         el.points.push({ x: e.clientX, y: e.clientY });
     } else {
         el.x2 = e.clientX;
@@ -502,8 +526,8 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 canvas.addEventListener("mouseup", () => {
-    if (currentTool === "selection-tool") {
-        currentCanvasState = "IDLE";
+    if (currentTool === tools.SELECTION) {
+        currentCanvasState = canvasStates.IDLE;
         resizeHandle = null;
         movement.clear();
         rotation = {
@@ -518,8 +542,8 @@ canvas.addEventListener("mouseup", () => {
 
     let el = elements[elements.length - 1];
 
-    if (el.tool === "image-tool") {
-        currentCanvasState = "IDLE";
+    if (el.tool === tools.IMAGE) {
+        currentCanvasState = canvasStates.IDLE;
         fetchImage(el).then(() => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             render(elements, selectedElements, ctx);
@@ -528,8 +552,8 @@ canvas.addEventListener("mouseup", () => {
         return;
     }
 
-    if (el.tool === "text-tool" && el.state === "placeholder") {
-        currentCanvasState = "IDLE";  
+    if (el.tool === tools.TEXT && el.state === "placeholder") {
+        currentCanvasState = canvasStates.IDLE;  
         resizeHandle = null;
         movement.clear();
         rotation = {
@@ -542,7 +566,7 @@ canvas.addEventListener("mouseup", () => {
         return;
     }
 
-    currentCanvasState = "IDLE";
+    currentCanvasState = canvasStates.IDLE;
     resizeHandle = null;
     movement.clear();
     rotation = {
@@ -557,7 +581,7 @@ canvas.addEventListener("mouseup", () => {
 const fetchImages = (els) => {
     let promises = [];
     els.forEach(el => {
-        if (el.tool === "image-tool" && el.data.url)
+        if (el.tool === tools.IMAGE && el.data.url)
             promises.push(loadImage(el.data.url).then(img => { el.data.img = img; }));
     });
     return Promise.all(promises);
@@ -568,11 +592,11 @@ addEventListener("keydown", (e) => {
     if (!activeTextBox.element && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const n = Number(e.key);
         if (e.key === "0") {
-            const target = document.getElementById('selection-tool')
+            const target = document.getElementById(tools.SELECTION)
             if (target) {
                 target.checked = true;
                 clearSelection();
-                currentTool = 'selection-tool'
+                currentTool = tools.SELECTION
                 return;
             }
         } else if (Number.isInteger(n) && n >= 1) {
@@ -628,7 +652,7 @@ addEventListener("keydown", (e) => {
 
 // Cursor style
 canvas.addEventListener("mousemove", (e) => {
-    if (currentTool !== "selection-tool") {
+    if (currentTool !== tools.SELECTION) {
         canvas.style.cursor = "default";
         return;
     }
@@ -681,11 +705,11 @@ const updateHistory = () => {
 
 const applyTheme = (theme) => {
     document.body.dataset.theme = theme;
-    themeToggleBtn.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+    themeToggleBtn.textContent = theme === themes.DARK ? "Light Mode" : "Dark Mode";
 };
 
 const savedTheme = localStorage.getItem("scribbleTheme");
-if (savedTheme === "dark" || savedTheme === "light") {
+if (savedTheme === themes.DARK || savedTheme === themes.LIGHT) {
     currentTheme = savedTheme;
 }
 applyTheme(currentTheme);
@@ -703,8 +727,8 @@ if (colorDisplay) {
     colorDisplay.innerText = currentColor
 }
 
-if (fillModeBtn && fillModeBtn.checked) currentPaintMode = "fill";
-if (strokeModeBtn && strokeModeBtn.checked) currentPaintMode = "stroke";
+if (fillModeBtn && fillModeBtn.checked) currentPaintMode = paintModes.FILL;
+if (strokeModeBtn && strokeModeBtn.checked) currentPaintMode = paintModes.STROKE;
 
 layerUpBtn.addEventListener("click", (e) => {
     if (selectedElements.length === 1) {

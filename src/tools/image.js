@@ -1,5 +1,4 @@
 import { renderSelectionUI, loadImage } from "../utils.js";
-import { resizeRect } from "./rect.js";
 
 export const hitTestImage = (el, x, y) => {
 
@@ -32,8 +31,6 @@ export const moveImage = (el, dx, dy) => {
   el.x2 += dx
   el.y2 += dy
 }
-
-export const resizeImage = resizeRect
 
 export const getBoundsImage = (el) => {
   return {

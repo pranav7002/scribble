@@ -31,13 +31,6 @@ export const moveRect = (el, dx, dy) => {
 	el.y2 += dy
 }
 
-export const resizeRect = (el, handle, x, y) => {
-	if (handle === "tl") { el.x1 = x; el.y1 = y; }
-	if (handle === "tr") { el.x2 = x; el.y1 = y; }
-	if (handle === "bl") { el.x1 = x; el.y2 = y; }
-	if (handle === "br") { el.x2 = x; el.y2 = y; }
-}
-
 export const getBoundsRect = (el) => {
 	return {
 		x1: Math.min(el.x1, el.x2),

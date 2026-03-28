@@ -1,5 +1,4 @@
 import { area } from "../utils.js";
-import { resizeRect } from "./rect.js";
 
 export const hitTestTriangle = (el, x, y) => {
   let { x1, y1, x2, y2 } = getBoundsTriangle(el)
@@ -42,8 +41,6 @@ export const moveTriangle = (el, dx, dy) => {
   el.x2 += dx
   el.y2 += dy
 }
-
-export const resizeTriangle = resizeRect
 
 export const getBoundsTriangle = (el) => {
   return {

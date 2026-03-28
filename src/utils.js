@@ -187,3 +187,10 @@ export const getOffsetAngle = (el, x, y) => {
 
     return Math.atan2(y - cy, x - cx)
 }
+
+export const resize = (el, handle, x, y) => {
+	if (handle === "tl") { el.x1 = x; el.y1 = y; }
+	if (handle === "tr") { el.x2 = x; el.y1 = y; }
+	if (handle === "bl") { el.x1 = x; el.y2 = y; }
+	if (handle === "br") { el.x2 = x; el.y2 = y; }
+}

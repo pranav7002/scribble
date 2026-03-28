@@ -1,5 +1,4 @@
 import { dist } from "../utils.js";
-import { resizeRect } from "./rect.js";
 
 export const hitTestLine = (el, x, y) => {
 
@@ -33,8 +32,6 @@ export const moveLine = (el, dx, dy) => {
     el.x2 += dx
     el.y2 += dy
 }
-
-export const resizeLine = resizeRect
 
 export const getBoundsLine = (el) => {
     return {
