@@ -60,7 +60,8 @@ import {
     toLocalCoords,
     getOffsetAngle,
     loadImage,
-    resize
+    resize,
+    diff
 } from "./utils.js";
 
 //CONSTANTS
@@ -79,8 +80,6 @@ const strokeModeBtn = document.getElementById("paint-stroke");
 const layerUpBtn = document.getElementById('layer-up')
 const layerDownBtn = document.getElementById('layer-down')
 
-// STATE VARIABLES
-
 //ENUMS
 const canvasStates = {
     IDLE: 'IDLE',
@@ -88,6 +87,7 @@ const canvasStates = {
 }
 const tools = {
     NONE: 'NONE',
+    ERASER: 'eraser-tool',
     RECT: 'rect-tool',
     LINE: 'line-tool',
     CIRCLE: 'circle-tool',
@@ -110,6 +110,8 @@ const themes = {
     LIGHT: 'light'
 }
 
+// STATE VARIABLES
+
 //CANVAS STATE
 let elements = [];
 let selectedElements = [];
@@ -117,6 +119,10 @@ let currentCanvasState = canvasStates.IDLE;
 let currentTool = tools.NONE;
 let movement = new Map();
 let resizeHandle = null;
+let eraser = {
+    erasing: false,
+    toBeErased: []
+}
 let rotation = {
     rotating: false,
     startMouseAngle: 0,
@@ -392,6 +398,56 @@ const createElement = (x, y) => {
     return null;
 }
 
+//ERASER 
+
+const eraserMouseDownHandler = (eraser) => {
+    eraser.erasing = true
+    eraser.toBeErased = []
+}
+
+const eraserMouseMoveHandler = (eraser, elements, x, y) => {
+    if (!eraser.erasing) return
+    const toBeErasedHistory = eraser.toBeErased
+    eraser.toBeErased = []
+
+    elements.forEach(el => {
+        if (isHit(el, x, y)) {
+            eraser.toBeErased.push(el)
+        }
+    })
+
+    let { onlyA, onlyB } = diff(toBeErasedHistory, eraser.toBeErased)
+
+    onlyA.forEach(el => {
+        el.style.opacity *= 2;
+    });
+    onlyB.forEach(el => {
+        el.style.opacity *= 0.5;
+    });
+
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    render(elements, selectedElements, ctx);
+}
+
+const eraserMouseUpHandler = (eraser, elements) => {
+    if (!eraser.erasing) return
+
+    for (let i = elements.length - 1; i >= 0; i--) {
+        for (let j = 0; j < eraser.toBeErased.length; j++) {
+            if (elements[i] === eraser.toBeErased[j]) {
+                elements.splice(i, 1)
+                break
+            }
+        }
+    }
+
+    eraser.erasing = false
+    eraser.toBeErased = []
+
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    render(elements, selectedElements, ctx);
+}
+
 // EVENTS
 
 strokeSlider.addEventListener("input", (e) => {
@@ -431,6 +487,13 @@ allToolInputs.forEach(i => {
 
 canvas.addEventListener("mousedown", (e) => {
     if (currentTool === tools.NONE) return;
+
+    if (currentTool === tools.ERASER) {
+        updateHistory();
+        currentCanvasState = canvasStates.EDITING;
+        eraserMouseDownHandler(eraser);
+        return;
+    }
 
     if (activeTextBox.element) {
         if (!isHit(activeTextBox.element, e.clientX, e.clientY)) {
@@ -486,6 +549,11 @@ canvas.addEventListener("mousedown", (e) => {
 canvas.addEventListener("mousemove", (e) => {
     if (currentCanvasState !== canvasStates.EDITING) return;
 
+    if (currentTool === tools.ERASER) {
+        eraserMouseMoveHandler(eraser, elements, e.clientX, e.clientY)
+        return;
+    }
+
     if (currentTool === tools.SELECTION) {
         if (resizeHandle) {
             const el = selectedElements[0];
@@ -540,6 +608,13 @@ canvas.addEventListener("mouseup", () => {
         return;
     }
 
+    if (currentTool === tools.ERASER) {
+        eraserMouseUpHandler(eraser, elements);
+        currentCanvasState = canvasStates.IDLE;   // add this
+        localStorage.setItem("scribbleElements", JSON.stringify(elements));
+        return;                                   // avoid falling through
+    }
+
     let el = elements[elements.length - 1];
 
     if (el.tool === tools.IMAGE) {
@@ -553,7 +628,7 @@ canvas.addEventListener("mouseup", () => {
     }
 
     if (el.tool === tools.TEXT && el.state === "placeholder") {
-        currentCanvasState = canvasStates.IDLE;  
+        currentCanvasState = canvasStates.IDLE;
         resizeHandle = null;
         movement.clear();
         rotation = {
@@ -591,12 +666,20 @@ addEventListener("keydown", (e) => {
     // tool shortcuts 1 to N, 0 for selection tool
     if (!activeTextBox.element && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const n = Number(e.key);
-        if (e.key === "0") {
+        if (e.key === "s") {
             const target = document.getElementById(tools.SELECTION)
             if (target) {
                 target.checked = true;
                 clearSelection();
                 currentTool = tools.SELECTION
+                return;
+            }
+        } else if (e.key === 'e') {
+            const target = document.getElementById('eraser-tool')
+            if (target) {
+                target.checked = true;
+                clearSelection();
+                currentTool = tools.ERASER
                 return;
             }
         } else if (Number.isInteger(n) && n >= 1) {
@@ -705,7 +788,7 @@ const updateHistory = () => {
 
 const applyTheme = (theme) => {
     document.body.dataset.theme = theme;
-    themeToggleBtn.textContent = theme === themes.DARK ? "Light Mode" : "Dark Mode";
+    themeToggleBtn.textContent = theme === themes.DARK ? themes.LIGHT : themes.DARK ;
 };
 
 const savedTheme = localStorage.getItem("scribbleTheme");
@@ -746,7 +829,7 @@ layerUpBtn.addEventListener("click", (e) => {
         elements[indexOfEl + 1] = temp
 
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        render(elements, selectedElements, ctx);    
+        render(elements, selectedElements, ctx);
     }
 })
 
@@ -766,6 +849,6 @@ layerDownBtn.addEventListener("click", (e) => {
         elements[indexOfEl - 1] = temp
 
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        render(elements, selectedElements, ctx);    
+        render(elements, selectedElements, ctx);
     }
 })

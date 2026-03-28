@@ -194,3 +194,24 @@ export const resize = (el, handle, x, y) => {
 	if (handle === "bl") { el.x1 = x; el.y2 = y; }
 	if (handle === "br") { el.x2 = x; el.y2 = y; }
 }
+
+//really cool function from stack overflow :D
+export const diff = (a, b) => {
+  const setB = new Set(b)
+
+  const intersection = []
+  const onlyA = []
+
+  for (const x of a) {
+    if (setB.has(x)) {
+      intersection.push(x)
+    } else {
+      onlyA.push(x)
+    }
+  }
+
+  const setA = new Set(a)
+  const onlyB = b.filter(x => !setA.has(x))
+
+  return { intersection, onlyA, onlyB }
+}
