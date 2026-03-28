@@ -789,7 +789,7 @@ const updateHistory = () => {
 
 const applyTheme = (theme) => {
     document.body.dataset.theme = theme;
-    themeToggleBtn.textContent = theme === themes.DARK ? themes.LIGHT : themes.DARK ;
+    themeToggleBtn.textContent = theme === themes.DARK ? "Light Mode" : "Dark Mode" ;
 };
 
 const savedTheme = localStorage.getItem("scribbleTheme");
