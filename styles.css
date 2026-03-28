@@ -16,6 +16,7 @@
   --range-track: #ddd;
   --range-thumb: #2b384c;
   --input-border: #ddd;
+  --shortcut-info: #555555;
 }
 
 body[data-theme="dark"] {
@@ -28,6 +29,7 @@ body[data-theme="dark"] {
   --range-track: #4f5f78;
   --range-thumb: #e0e8f5;
   --input-border: #4f5f78;
+  --shortcut-info: #555555;
 }
 
 #canvas {
@@ -67,9 +69,10 @@ button:active,
   height: 6.5%;
 
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 0.5rem;
   padding: 0.5rem;
+  align-items: center;
 
   color: var(--text-color);
   background: var(--panel-bg);
@@ -300,4 +303,27 @@ body[data-theme="dark"] svg {
   .top-bar {
     height: 3.6rem;
   }
+  .shortcut-info {
+    display: none;
+  }
+}
+
+.shortcut-info {
+  position: fixed;
+  bottom: 0.6rem;
+  right: 1%;
+  font-size: 0.8rem;
+  color: var(--shortcut-info);
+}
+
+#title {
+  font-size: 1.5rem;
+  font-weight: 100;
+  margin-left: 0.4rem;
+}
+
+
+.nav-right {
+  display: flex;
+  gap: 0.3rem;
 }
