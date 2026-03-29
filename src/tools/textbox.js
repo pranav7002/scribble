@@ -1,3 +1,4 @@
+import { textboxStates } from "../constants.js";
 import { renderSelectionUI, getDiagonalCorners } from "../utils.js";
 
 export const hitTestTextbox = (el, x, y) => {
@@ -7,14 +8,12 @@ export const hitTestTextbox = (el, x, y) => {
 
 export const renderTextbox = (el, ctx, activeTextBox = { element: null, before: "", after: "" }) => {
 	ctx.save();
-	ctx.lineCap = "round";
-	ctx.lineJoin = "round";
 	ctx.strokeStyle = el.style.color;
 	ctx.globalAlpha = el.style.opacity;
 
 	let { x1, y1, x2, y2, state } = el;
 
-	if (state === "placeholder") {
+	if (state === textboxStates.PLACEHOLDER) {
 		renderSelectionUI(getBoundsTextbox(el), ctx, {
 			showHandles: true,
 			color: "#000000",
@@ -29,7 +28,7 @@ export const renderTextbox = (el, ctx, activeTextBox = { element: null, before: 
 		ctx.font = `${height - 2}px Pixelify Sans`;
 		ctx.fillText("|", x1, y2);
 
-	} else if (state === "typing") {
+	} else if (state === textboxStates.TYPING) {
 
 		let before = activeTextBox.before;
 		let after = activeTextBox.after;
@@ -57,7 +56,7 @@ export const renderTextbox = (el, ctx, activeTextBox = { element: null, before: 
 		offset = ctx.measureText(before + "|").width;
 		ctx.fillText(after, x1 + offset, y2);
 
-	} else if (state === "typed") {
+	} else if (state === textboxStates.TYPED) {
 
 		({ x1, y1, x2, y2 } = getDiagonalCorners(el));
 		let height = y2 - y1;
@@ -96,15 +95,14 @@ export const textboxKeydownHandler = (key, activeTextBox, ctx) => {
 	if (key.length === 1) {
 		let newText = before + key + after;
 
-		ctx.font = `${activeTextBox.element.y2 - activeTextBox.element.y1 - 2}px Pixelify Sans`;
+		const { y1: by1, y2: by2 } = getBoundsTextbox(activeTextBox.element);
+		ctx.font = `${by2 - by1 - 2}px Pixelify Sans`;
 		let width = ctx.measureText(newText).width;
 
 		if (width <= maxWidth) {
 			before = before + key;
 		} else {
 			before = before + key;
-			ctx.font = `${activeTextBox.element.y2 - activeTextBox.element.y1 - 2}px Pixelify Sans`;
-
 			activeTextBox.element.x2 = activeTextBox.element.x1 + width
 		}
 
@@ -140,7 +138,7 @@ export const textboxMouseupHandler = (el) => {
 }
 
 export const defocusTextbox = (el, ctx) => {
-	el.state = "typed";
+	el.state = textboxStates.TYPED;
 
 	let { x1, y1, x2, y2 } = getBoundsTextbox(el);
 

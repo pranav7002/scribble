@@ -64,52 +64,10 @@ import {
     diff
 } from "./utils.js";
 
-//CONSTANTS
-
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-const allToolInputs = document.querySelectorAll("input[name='tool']");
-const strokeSlider = document.getElementById("stroke-width");
-const opacitySlider = document.getElementById("opacity");
-const colorSelector = document.getElementById("color-selector");
-const themeToggleBtn = document.getElementById("theme-toggle");
-const clearBtn = document.getElementById("clear-tool");
-const colorDisplay = document.getElementById("color-display")
-const fillModeBtn = document.getElementById("paint-fill");
-const strokeModeBtn = document.getElementById("paint-stroke");
-const layerUpBtn = document.getElementById('layer-up')
-const layerDownBtn = document.getElementById('layer-down')
-const fillSelector = document.querySelector(".fill-section")
-
-//ENUMS
-const canvasStates = {
-    IDLE: 'IDLE',
-    EDITING: 'EDITING'
-}
-const tools = {
-    NONE: 'NONE',
-    ERASER: 'eraser-tool',
-    RECT: 'rect-tool',
-    LINE: 'line-tool',
-    CIRCLE: 'circle-tool',
-    TRIANGLE: 'triangle-tool',
-    BRUSH: 'brush-tool',
-    DASHED_BRUSH: 'dash-brush-tool',
-    DOTTED_BRUSH: 'dotted-brush-tool',
-    TEXT: 'text-tool',
-    IMAGE: 'image-tool',
-    SELECTION: 'selection-tool'
-}
-
-const paintModes = {
-    FILL: 'fill',
-    STROKE: 'stroke'
-}
-
-const themes = {
-    DARK: 'dark',
-    LIGHT: 'light'
-}
+import {
+    canvas, ctx, allToolInputs, strokeSlider, opacitySlider, colorSelector, themeToggleBtn, clearBtn, colorDisplay, fillModeBtn,
+    strokeModeBtn, layerDownBtn, layerUpBtn, fillSelector, canvasStates, tools, paintModes, themes, textboxStates
+} from "./constants.js";
 
 // STATE VARIABLES
 
@@ -381,10 +339,11 @@ const createElement = (x, y) => {
     }
 
     if (currentTool === tools.TEXT) {
+
         return {
             x1: x, y1: y, x2: x, y2: y,
             tool: currentTool,
-            state: "placeholder",
+            state: textboxStates.PLACEHOLDER,
             angle: 0,
             style: {
                 color: currentColor,
@@ -483,33 +442,30 @@ allToolInputs.forEach(i => {
     i.addEventListener("change", (e) => {
         clearSelection();
         currentTool = e.target.id;
+        canvas.style.cursor = "default";
     });
 });
 
 canvas.addEventListener("mousedown", (e) => {
     if (currentTool === tools.NONE) return;
 
-    if (currentTool === tools.ERASER) {
-        updateHistory();
-        currentCanvasState = canvasStates.EDITING;
-        eraserMouseDownHandler(eraser);
-        return;
-    }
-
-    if (activeTextBox.element) {
-        if (!isHit(activeTextBox.element, e.clientX, e.clientY)) {
-            updateHistory();
-            activeTextBox = defocusTextbox(activeTextBox.element, ctx, activeTextBox);
-
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            render(elements, selectedElements, ctx)
-            return
-        }
+    if (currentTool === tools.TEXT && activeTextBox.element) {
+        activeTextBox = defocusTextbox(activeTextBox.element, ctx);
+        //remove all textboxes that are in state syped but have no text from elements
+        elements = elements.filter(el =>
+            !(el.tool === tools.TEXT && el.state === textboxStates.TYPED && el.data.text === "")
+        );
+        render(elements, selectedElements, ctx);
+        localStorage.setItem("scribbleElements", JSON.stringify(elements));
     }
 
     updateHistory();
     currentCanvasState = canvasStates.EDITING;
 
+    if (currentTool === tools.ERASER) {
+        eraserMouseDownHandler(eraser);
+        return;
+    }
     if (currentTool === tools.SELECTION) {
         resizeHandle = null;
         rotation.rotating = false;
@@ -540,10 +496,14 @@ canvas.addEventListener("mousedown", (e) => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         render(elements, selectedElements, ctx);
         return;
-    }
-    else {
+    } else {
         const el = createElement(e.clientX, e.clientY);
         if (el) elements.push(el);
+        if (el.tool === tools.TEXT) {
+            activeTextBox.element = el;
+            activeTextBox.before = "";
+            activeTextBox.after = "";
+        }
     }
 });
 
@@ -608,12 +568,11 @@ canvas.addEventListener("mouseup", () => {
         localStorage.setItem("scribbleElements", JSON.stringify(elements));
         return;
     }
-
     if (currentTool === tools.ERASER) {
         eraserMouseUpHandler(eraser, elements);
-        currentCanvasState = canvasStates.IDLE;   // add this
+        currentCanvasState = canvasStates.IDLE;
         localStorage.setItem("scribbleElements", JSON.stringify(elements));
-        return;                                   // avoid falling through
+        return;
     }
 
     let el = elements[elements.length - 1];
@@ -626,20 +585,21 @@ canvas.addEventListener("mouseup", () => {
             localStorage.setItem("scribbleElements", JSON.stringify(elements));
         });
         return;
-    }
-
-    if (el.tool === tools.TEXT && el.state === "placeholder") {
+    } else if (el.tool === tools.TEXT) {
+        // discard zero size element 
+        if (Math.abs(el.x2 - el.x1) < 4 || Math.abs(el.y2 - el.y1) < 4) {
+            elements.pop();
+            activeTextBox = { element: null, before: "", after: "" };
+            currentCanvasState = canvasStates.IDLE;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            render(elements, selectedElements, ctx);
+            return;
+        }
         currentCanvasState = canvasStates.IDLE;
-        resizeHandle = null;
-        movement.clear();
-        rotation = {
-            rotating: false,
-            startMouseAngle: 0,
-            startElementAngle: 0,
-        };
-
-        activeTextBox = textboxMouseupHandler(el);
-        return;
+        el.state = textboxStates.TYPING;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        render(elements, selectedElements, ctx);
+        localStorage.setItem("scribbleElements", JSON.stringify(elements));
     }
 
     currentCanvasState = canvasStates.IDLE;
@@ -664,10 +624,10 @@ const fetchImages = (els) => {
 };
 
 addEventListener("keydown", (e) => {
-    // tool shortcuts 1 to N, 0 for selection tool
-    if (!activeTextBox.element && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    // tool shortcuts 1 to N, s for selection tool, e for eraser
+    if (!activeTextBox.element && currentTool !== tools.TEXT && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const n = Number(e.key);
-        if (e.key === "s" || e.key === "S") {
+        if ((e.key === "s" || e.key === "S") && !activeTextBox.element) {
             const target = document.getElementById(tools.SELECTION)
             if (target) {
                 target.checked = true;
@@ -675,7 +635,7 @@ addEventListener("keydown", (e) => {
                 currentTool = tools.SELECTION
                 return;
             }
-        } else if (e.key === 'e' || e.key === "E") {
+        } else if ((e.key === 'e' || e.key === "E") && !activeTextBox.element) {
             const target = document.getElementById('eraser-tool')
             if (target) {
                 target.checked = true;
@@ -728,10 +688,12 @@ addEventListener("keydown", (e) => {
     }
 
     // Textbox input
-    if (!activeTextBox.element) return;
-    textboxKeydownHandler(e.key, activeTextBox, ctx);
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    render(elements, selectedElements, ctx);
+    if (activeTextBox.element) {
+        textboxKeydownHandler(e.key, activeTextBox, ctx);
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        render(elements, selectedElements, ctx);
+        localStorage.setItem("scribbleElements", JSON.stringify(elements));
+    }
 });
 
 // Cursor style
@@ -766,12 +728,11 @@ if (savedElements) {
 
 const clearSelection = () => {
     if (activeTextBox.element) {
-        activeTextBox.element.state = "typed";
-        activeTextBox = {
-            element: null,
-            before: "",
-            after: "",
-        };
+        activeTextBox = defocusTextbox(activeTextBox.element, ctx);
+
+        elements = elements.filter(el =>
+            !(el.tool === tools.TEXT && el.state === textboxStates.TYPED && el.data.text === "")
+        );
     }
 
     selectedElements = [];
@@ -789,7 +750,7 @@ const updateHistory = () => {
 
 const applyTheme = (theme) => {
     document.body.dataset.theme = theme;
-    themeToggleBtn.textContent = theme === themes.DARK ? "Light Mode" : "Dark Mode" ;
+    themeToggleBtn.textContent = theme === themes.DARK ? "Light Mode" : "Dark Mode";
 };
 
 const savedTheme = localStorage.getItem("scribbleTheme");
@@ -813,7 +774,6 @@ if (colorDisplay) {
 
 if (fillModeBtn && fillModeBtn.checked) currentPaintMode = paintModes.FILL;
 if (strokeModeBtn && strokeModeBtn.checked) currentPaintMode = paintModes.STROKE;
-
 
 //LAYERS
 
