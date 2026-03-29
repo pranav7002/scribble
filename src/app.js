@@ -446,7 +446,7 @@ allToolInputs.forEach(i => {
     });
 });
 
-canvas.addEventListener("mousedown", (e) => {
+canvas.addEventListener("pointerdown", (e) => {
     if (currentTool === tools.NONE) return;
 
     if (currentTool === tools.TEXT && activeTextBox.element) {
@@ -507,8 +507,9 @@ canvas.addEventListener("mousedown", (e) => {
     }
 });
 
-canvas.addEventListener("mousemove", (e) => {
+canvas.addEventListener("pointermove", (e) => {
     if (currentCanvasState !== canvasStates.EDITING) return;
+
 
     if (currentTool === tools.ERASER) {
         eraserMouseMoveHandler(eraser, elements, e.clientX, e.clientY)
@@ -554,7 +555,7 @@ canvas.addEventListener("mousemove", (e) => {
     render(elements, selectedElements, ctx);
 });
 
-canvas.addEventListener("mouseup", () => {
+canvas.addEventListener("pointerup", () => {
     if (currentTool === tools.SELECTION) {
         currentCanvasState = canvasStates.IDLE;
         resizeHandle = null;
@@ -697,7 +698,7 @@ addEventListener("keydown", (e) => {
 });
 
 // Cursor style
-canvas.addEventListener("mousemove", (e) => {
+canvas.addEventListener("pointermove", (e) => {
     if (currentTool !== tools.SELECTION) {
         canvas.style.cursor = "default";
         return;
