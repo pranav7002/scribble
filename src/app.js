@@ -638,7 +638,11 @@ const fetchImages = (els) => {
     let promises = [];
     els.forEach(el => {
         if (el.tool === tools.IMAGE && el.data.url)
-            promises.push(loadImage(el.data.url).then(img => { el.data.img = img; }));
+            promises.push(
+                loadImage(el.data.url)
+                    .then(img => { el.data.img = img; })
+                    .catch(err => console.error("Failed to load saved image:", err))
+            );
     });
     return Promise.all(promises);
 };

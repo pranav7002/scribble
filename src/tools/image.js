@@ -42,12 +42,20 @@ export const getBoundsImage = (el) => {
 }
 
 export const fetchImage = (el) => {
-  let url = `https://picsum.photos/${Math.abs(el.x2 - el.x1)}/${Math.abs(el.y2 - el.y1)}`;
+  // Picsum requires integer sizes > 0. Pointer events output sub-pixel floats!
+  const width = Math.max(1, Math.round(Math.abs(el.x2 - el.x1)));
+  const height = Math.max(1, Math.round(Math.abs(el.y2 - el.y1)));
+  let url = `https://picsum.photos/${width}/${height}`;
   el.data.url = url;
 
-  return loadImage(el.data.url).then((img) => {
-    el.data.img = img;
-    el.state = "image";
-  });
+  return loadImage(el.data.url)
+    .then((img) => {
+      el.data.img = img;
+      el.state = "image";
+    })
+    .catch((err) => {
+      console.error("Failed to load image:", err);
+      // Optional: draw a fallback or leave it safely un-rendered
+    });
 }
 
