@@ -108,16 +108,16 @@
                     <p>random image</p>
                 </label>
                 <div class="text-tool">
-                <input type="radio" name="tool" id="text-tool" hidden />
-                <label for="text-tool" class="tool-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="#0E0E0E">
-                        <g fill="none" stroke="#0E0E0E" stroke-linejoin="round" stroke-width="4">
-                            <rect width="36" height="36" x="6" y="6" rx="3" />
-                            <path stroke-linecap="round" d="M16 19v-3h16v3M22 34h4m-2-16v16" />
-                        </g>
-                    </svg>
-                    <p>text</p>
-                </label>
+                    <input type="radio" name="tool" id="text-tool" hidden />
+                    <label for="text-tool" class="tool-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="#0E0E0E">
+                            <g fill="none" stroke="#0E0E0E" stroke-linejoin="round" stroke-width="4">
+                                <rect width="36" height="36" x="6" y="6" rx="3" />
+                                <path stroke-linecap="round" d="M16 19v-3h16v3M22 34h4m-2-16v16" />
+                            </g>
+                        </svg>
+                        <p>text</p>
+                    </label>
                 </div>
                 <input type="radio" name="tool" id="eraser-tool" hidden />
                 <label for="eraser-tool" class="tool-btn">
@@ -139,29 +139,30 @@
                 </label>
             </div>
             <div class="fill-section">
-            <p class="section-heading" id="fill-selector">FILL</p>
-            <div class="fill-selector">
-                <input type="radio" name="paint-mode" id="paint-fill" hidden>
-                <label for="paint-fill" class="fill-btn">Fill</label>
+                <p class="section-heading" id="fill-selector">FILL</p>
+                <div class="fill-selector">
+                    <input type="radio" name="paint-mode" id="paint-fill" hidden>
+                    <label for="paint-fill" class="fill-btn">Fill</label>
 
-                <input type="radio" name="paint-mode" id="paint-stroke" hidden checked>
-                <label for="paint-stroke" class="fill-btn">Stroke</label>
-            </div>
+                    <input type="radio" name="paint-mode" id="paint-stroke" hidden checked>
+                    <label for="paint-stroke" class="fill-btn">Stroke</label>
+                </div>
             </div>
             <p class="section-heading">COLOR</p>
             <div class="sidebar-color" id="sidebar-color">
                 <input type="color" name="color" id="color-selector" value="#EE2835">
                 <p class="section-heading"><span class="color-display" id="color-display">#EE2835</span></p>
             </div>
+            <div class="width-and-opacity">
+                <div class="width-slider">
+                    <label for="stroke-width" class="section-heading">Stroke</label>
+                    <input type="range" id="stroke-width" name="stroke" min="1" max="30" value="22.5" />
+                </div>
 
-            <div class="width-slider">
-                <label for="stroke-width" class="section-heading">Stroke</label>
-                <input type="range" id="stroke-width" name="stroke" min="1" max="30" value="22.5" />
-            </div>
-
-            <div class="opacity-slider">
-                <label for="opacity" class="section-heading">Opacity</label>
-                <input type="range" id="opacity" name="opacity" min="0" max="1" step="0.01" value="0.75" />
+                <div class="opacity-slider">
+                    <label for="opacity" class="section-heading">Opacity</label>
+                    <input type="range" id="opacity" name="opacity" min="0" max="1" step="0.01" value="0.75" />
+                </div>
             </div>
             <p class="section-heading">LAYER UP/DOWN</p>
             <div class="layer-control" id="layer-control">

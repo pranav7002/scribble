@@ -6,7 +6,8 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   overflow: hidden;
 }
 
@@ -38,7 +39,8 @@ body[data-theme="dark"] {
 
 #canvas {
   background: var(--canvas-bg);
-  touch-action: none; /* prevents scroll for phones  */
+  touch-action: none;
+  /* prevents scroll for phones  */
   width: 100%;
   height: 100vh;
   display: block;
@@ -311,8 +313,8 @@ body[data-theme="dark"] svg {
   }
 
   #color-selector {
-    width: 24px;
-    height: 24px;
+    width: 1.5rem;
+    height: 1.5rem;
   }
 
   #layer-control {
@@ -347,11 +349,14 @@ body[data-theme="dark"] svg {
 
   .sidebar {
     top: 4rem;
-    width: 3.4rem;
+    width: 2.6rem;
     min-width: 0;
     padding: 0.4rem 0.2rem;
     align-items: center;
     height: fit-content;
+
+    backdrop-filter: none;
+    /* allow footer to leave the sidebar */
   }
 
   .sidebar-tools {
@@ -359,8 +364,8 @@ body[data-theme="dark"] svg {
   }
 
   .tool-btn {
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 1.6rem;
+    height: 1.6rem;
     padding: 0;
     display: flex;
     align-items: center;
@@ -371,8 +376,8 @@ body[data-theme="dark"] svg {
   }
 
   .tool-btn svg {
-    width: 1.3rem;
-    height: 1.3rem;
+    width: 1.15rem;
+    height: 1.15rem;
   }
 
   .tool-btn p {
@@ -384,8 +389,8 @@ body[data-theme="dark"] svg {
   }
 
   .layer {
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 1.6rem;
+    height: 1.6rem;
     padding: 0;
     display: flex;
     align-items: center;
@@ -399,10 +404,13 @@ body[data-theme="dark"] svg {
     margin-top: 0;
   }
 
-  /* .fill-selector, */
-  input[type="range"],
   .section-heading {
     display: none;
+  }
+
+  .width-and-opacity .section-heading {
+    display: block;
+    font-size: 0.65rem;
   }
 
   #fill-selector {
@@ -420,15 +428,46 @@ body[data-theme="dark"] svg {
   .sidebar-color {
     margin-bottom: 0;
     margin-top: 0.35rem;
+	margin-bottom: 0.4rem;
+  }
+
+#color-selector {
+    width: 1.5rem;
+    height: 1.5rem;
   }
 
   .top-bar {
     height: 3.6rem;
   }
+
   .shortcut-info {
     display: none;
   }
+
   .text-tool {
     display: none;
+  }
+
+  .width-and-opacity {
+    position: fixed;
+    bottom: 0.5dvh;
+    left: 0.2rem;
+    right: 0.2rem;
+
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.8rem;
+
+    background: var(--panel-bg);
+    border: 1px solid var(--input-border);
+    box-shadow: var(--panel-shadow);
+  }
+
+  .width-slider,
+  .opacity-slider {
+    flex: 1;
   }
 }
