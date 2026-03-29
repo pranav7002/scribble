@@ -8,7 +8,7 @@ export const renderDashedBrush = (el, ctx) => {
   ctx.strokeStyle = el.style.color || "#000";
   ctx.globalAlpha = el.style.opacity;
 
-  ctx.setLineDash([10, 20]);
+  ctx.setLineDash([10, 24]);
   ctx.beginPath();
   let { x, y } = el.points[0];
   ctx.moveTo(x, y);

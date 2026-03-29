@@ -100,7 +100,7 @@ let redoStack = []
 //COSMETIC STATE
 let currentColor = "#0C8EF4";
 let currentWidth = 15;
-let currentOpacity = 0.6;
+let currentOpacity = 1;
 let currentTheme = themes.LIGHT;
 let currentPaintMode = paintModes.STROKE;
 

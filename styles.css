@@ -399,10 +399,22 @@ body[data-theme="dark"] svg {
     margin-top: 0;
   }
 
-  .fill-selector,
+  /* .fill-selector, */
   input[type="range"],
   .section-heading {
     display: none;
+  }
+
+  #fill-selector {
+    display: flex;
+    justify-content: center;
+  }
+
+  .fill-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    font-size: 0.7rem;
   }
 
   .sidebar-color {
@@ -413,7 +425,6 @@ body[data-theme="dark"] svg {
   .top-bar {
     height: 3.6rem;
   }
-
   .shortcut-info {
     display: none;
   }
