@@ -497,6 +497,25 @@ canvas.addEventListener("pointerdown", (e) => {
         render(elements, selectedElements, ctx);
         return;
     } else {
+        // edit textbox
+        if (currentTool === tools.TEXT) {
+            for (let i = elements.length - 1; i >= 0; i--) {
+                const possibleTextbox = elements[i];
+                if (possibleTextbox.tool === tools.TEXT &&
+                    possibleTextbox.state === textboxStates.TYPED &&
+                    isHit(possibleTextbox, e.clientX, e.clientY)) {
+                    possibleTextbox.state = textboxStates.TYPING;
+                    activeTextBox.element = possibleTextbox;
+                    activeTextBox.before = possibleTextbox.data.text;
+                    activeTextBox.after = "";
+                    currentCanvasState = canvasStates.IDLE;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    render(elements, selectedElements, ctx);
+                    return;
+                }
+            }
+        }
+
         const el = createElement(e.clientX, e.clientY);
         if (el) elements.push(el);
         if (el.tool === tools.TEXT) {
@@ -586,7 +605,7 @@ canvas.addEventListener("pointerup", () => {
             localStorage.setItem("scribbleElements", JSON.stringify(elements));
         });
         return;
-    } else if (el.tool === tools.TEXT) {
+    } else if (el.tool === tools.TEXT && el.state === textboxStates.PLACEHOLDER) {
         // discard zero size element 
         if (Math.abs(el.x2 - el.x1) < 4 || Math.abs(el.y2 - el.y1) < 4) {
             elements.pop();
